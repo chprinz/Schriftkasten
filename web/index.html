@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schriftkasten</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231b1a17'/%3E%3Ctext x='16' y='23' font-family='Georgia' font-size='19' text-anchor='middle' fill='%23f4f2ee'%3EAa%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/web/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand">
+      <span class="brand-mark">Aa</span>
+      <div>
+        <div class="brand-name">Schriftkasten</div>
+        <div class="brand-meta" id="brandMeta">lädt …</div>
+      </div>
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+
+  <main class="main">
+    <div class="bar" id="bar">
+      <div class="bar-row">
+        <label class="search">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
+          <input id="q" type="search" placeholder="Suchen: Name, Gestalter, Tag, Notiz …" autocomplete="off" spellcheck="false">
+          <kbd>/</kbd>
+        </label>
+        <input id="sample" class="sample" type="text" placeholder="Eigener Vorschautext …" spellcheck="false">
+        <div class="seg" id="presets"></div>
+      </div>
+      <div class="bar-row bar-row-2">
+        <div class="ctl">
+          <span class="lbl">Größe</span>
+          <input id="size" type="range" min="12" max="160" step="1" value="44">
+          <output id="sizeOut">44</output>
+        </div>
+        <div class="ctl">
+          <span class="lbl">Schnitt</span>
+          <select id="weight">
+            <option value="auto">Standard</option>
+            <option value="100">Thin 100</option>
+            <option value="300">Light 300</option>
+            <option value="400">Regular 400</option>
+            <option value="500">Medium 500</option>
+            <option value="700">Bold 700</option>
+            <option value="900">Black 900</option>
+            <option value="i">Kursiv</option>
+          </select>
+        </div>
+        <div class="chips" id="filters"></div>
+        <div class="spacer"></div>
+        <div class="ctl">
+          <span class="lbl">Sortieren</span>
+          <select id="sort">
+            <option value="name">Name</option>
+            <option value="score">Qualität</option>
+            <option value="styles">Anzahl Schnitte</option>
+            <option value="added">Zuletzt hinzugefügt</option>
+            <option value="rating">Meine Bewertung</option>
+            <option value="xh">x-Höhe</option>
+          </select>
+        </div>
+        <div class="seg" id="layoutSeg">
+          <button data-v="list" title="Liste">Liste</button>
+          <button data-v="grid" title="Raster">Raster</button>
+          <button data-v="para" title="Absatz">Absatz</button>
+        </div>
+        <div class="seg" id="canvasSeg">
+          <button data-v="paper" title="Helle Fläche">Hell</button>
+          <button data-v="night" title="Dunkle Fläche, wie Titel im Bild">Dunkel</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="head" id="head"></section>
+    <section class="list" id="list"></section>
+    <div id="sentinel"></div>
+  </main>
+</div>
+
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-in" id="drawerIn"></div>
+</aside>
+<div class="scrim" id="scrim"></div>
+
+<div class="tray" id="tray"></div>
+<div class="overlay" id="compare" aria-hidden="true"></div>
+<div class="pop" id="pop"></div>
+<div class="toasts" id="toasts"></div>
+
+<script src="/web/app.js"></script>
+</body>
+</html>

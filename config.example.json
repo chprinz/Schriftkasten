@@ -1,0 +1,7 @@
+{
+  "archiveDir": "~/Schriften-Archiv",
+  "includeSystem": false,
+  "extraSources": [
+    { "id": "extern", "label": "Schriften auf SSD", "path": "/Volumes/Archiv/Fonts", "installed": false }
+  ]
+}

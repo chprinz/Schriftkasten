@@ -1,0 +1,20 @@
+#!/bin/bash
+# Schriftkasten starten. Beim ersten Mal wird eine eigene Python-Umgebung eingerichtet.
+#   ./schriftkasten          einlesen (nur Änderungen) und Oberfläche öffnen
+#   ./schriftkasten scan     nur einlesen
+#   ./schriftkasten full     alles neu einlesen, dann öffnen
+set -e
+cd "$(dirname "$0")"
+PY=python3
+if [ ! -x .venv/bin/python ]; then
+  echo "Richte Python-Umgebung ein (einmalig) …"
+  "$PY" -m venv .venv
+  .venv/bin/pip install -q --upgrade pip
+  .venv/bin/pip install -q fonttools brotli
+fi
+case "$1" in
+  scan) exec .venv/bin/python scan.py ;;
+  full) .venv/bin/python scan.py --full ;;
+  *)    .venv/bin/python scan.py ;;
+esac
+exec .venv/bin/python serve.py

@@ -1,0 +1,306 @@
+{
+ "about": "Erste Kuratierung (Oktober 2026) auf Basis von ~/Library/Fonts. Sammlungen werden beim ersten Start übernommen und gehören dann dir. Kategorien und Notizen hier dienen als Vorgabe, eigene Einträge haben Vorrang.",
+ "collections": [
+  {
+   "id": "haus",
+   "name": "Hausschriften",
+   "desc": "Was in lpp- und cv-studio-Dokumenten schon im Einsatz ist.",
+   "items": [
+    "real text",
+    "instrument sans",
+    "fraunces",
+    "instrument serif"
+   ]
+  },
+  {
+   "id": "basis-sans",
+   "name": "Solide Basis · Grotesk",
+   "desc": "Vollständige Familien mit vielen Stärken, Kursiven und sauberen Umlauten. Erste Wahl für Web, Dokumente, Interfaces.",
+   "items": [
+    "inter",
+    "ibm plex sans",
+    "source sans pro",
+    "fira sans",
+    "work sans",
+    "instrument sans",
+    "real text",
+    "avenir next",
+    "barlow",
+    "nunito sans",
+    "lato",
+    "atkinson hyperlegible",
+    "rubik",
+    "red hat display"
+   ]
+  },
+  {
+   "id": "basis-serif",
+   "name": "Solide Basis · Serif",
+   "desc": "Lesetexte, Konzepte, Programmhefte. Alle mit Kursive und deutschen Sonderzeichen.",
+   "items": [
+    "literata",
+    "source serif pro",
+    "spectral",
+    "ibm plex serif",
+    "newsreader",
+    "crimson pro",
+    "vollkorn",
+    "lora",
+    "fraunces",
+    "charis",
+    "zilla slab",
+    "noto serif",
+    "petrona"
+   ]
+  },
+  {
+   "id": "untertitel",
+   "name": "Untertitel & Bauchbinden",
+   "desc": "Offene Formen, gut unterscheidbare Buchstaben (Il1, rn/m), auch bei 1080p und Bewegung lesbar. Mittlere Stärken nehmen, nicht Light.",
+   "items": [
+    "atkinson hyperlegible",
+    "source sans pro",
+    "fira sans",
+    "ibm plex sans",
+    "inter",
+    "avenir next",
+    "barlow semi condensed",
+    "real text",
+    "titillium web",
+    "open sans"
+   ]
+  },
+  {
+   "id": "filmtitel",
+   "name": "Filmtitel mit Haltung",
+   "desc": "Für Titel, Plakat, Vorspann. Zurückhaltend bis markant, nicht verspielt.",
+   "items": [
+    "fraunces",
+    "instrument serif",
+    "playfair display",
+    "gloock",
+    "dm serif display",
+    "cormorant infant",
+    "butler",
+    "blanco",
+    "big shoulders display",
+    "bebas neue",
+    "oswald",
+    "clash display variable",
+    "bricolage grotesque"
+   ]
+  },
+  {
+   "id": "schmal",
+   "name": "Schmal & kondensiert",
+   "desc": "Wenn viel Text in wenig Breite muss: Bauchbinden mit langen Namen, Hochformat, Social.",
+   "items": [
+    "barlow condensed",
+    "ibm plex sans condensed",
+    "asap condensed",
+    "roboto condensed",
+    "saira condensed",
+    "avenir next condensed",
+    "oswald",
+    "big shoulders text",
+    "yanone kaffeesatz",
+    "steelfish"
+   ]
+  },
+  {
+   "id": "mono",
+   "name": "Monospace & Technisches",
+   "desc": "Timecodes, Daten, Code, technische Einblendungen.",
+   "items": [
+    "ibm plex mono",
+    "iosevka",
+    "roboto mono",
+    "sf mono",
+    "ia writer mono s",
+    "courier prime sans",
+    "space grotesk"
+   ]
+  },
+  {
+   "id": "hand",
+   "name": "Handschrift, sparsam",
+   "desc": "Für Notizen im Bild, persönliche Einschübe. Eine davon reicht pro Projekt.",
+   "items": [
+    "caveat",
+    "kalam",
+    "just another hand",
+    "permanent marker",
+    "estonia",
+    "beau rivage",
+    "dancing script"
+   ]
+  }
+ ],
+ "families": {
+  "inter": {
+   "note": "Bildschirmschrift schlechthin. Neutral, sehr vollständig, viele OpenType-Funktionen (tnum, ss01, cv-Varianten)."
+  },
+  "ibm plex sans": {
+   "note": "Etwas technischer Charakter, große Familie mit Serif, Mono und Condensed zum Kombinieren."
+  },
+  "source sans pro": {
+   "note": "Ruhig und humanistisch, sehr gute Lesbarkeit in kleinen Größen."
+  },
+  "fira sans": {
+   "note": "Offen und klar, für Untertitel und Interfaces gemacht."
+  },
+  "atkinson hyperlegible": {
+   "note": "Für maximale Unterscheidbarkeit der Zeichen entworfen. Gut für Untertitel und barrierearme Inhalte."
+  },
+  "real text": {
+   "note": "FF Real: in lpp-Dokumenten im Einsatz. Feine Abstufung der Stärken von Hairline bis Black."
+  },
+  "instrument sans": {
+   "note": "Im cv-studio-Stil im Einsatz. Variabel in Breite und Stärke."
+  },
+  "fraunces": {
+   "note": "Variable Serif mit Achsen für Weichheit (SOFT) und Eigensinn (WONK). Im cv-studio-Stil im Einsatz."
+  },
+  "instrument serif": {
+   "note": "Schmale, elegante Display-Serif. Nur ein Schnitt plus Kursive, also eher für Titel."
+  },
+  "literata": {
+   "note": "Für langes Lesen gebaut, mit optischer Größe (opsz)."
+  },
+  "spectral": {
+   "note": "Leichte, helle Lese-Serif, sehr gut am Bildschirm."
+  },
+  "newsreader": {
+   "note": "Zeitungs-Serif mit optischer Größe, kräftiger als Spectral."
+  },
+  "barlow": {
+   "note": "Leicht abgerundete Grotesk mit Straßenschild-Anmutung. Liegt doppelt als OTF und TTF, siehe Aufräumen."
+  },
+  "barlow semi condensed": {
+   "note": "Guter Kompromiss für Bauchbinden mit langen Namen."
+  },
+  "avenir next": {
+   "note": "Klassiker, geometrisch aber freundlich. Vorsicht: Lizenz für Weitergabe/Web prüfen."
+  },
+  "bebas neue": {
+   "note": "Nur Versalien. Für kurze Titel, nicht für Sätze."
+  },
+  "big shoulders display": {
+   "note": "Schmal und kräftig, für Plakate und große Titel."
+  },
+  "iosevka": {
+   "note": "Sehr schmale Mono, riesige Dateien (je ca. 40 MB). Nur behalten, wenn du sie brauchst."
+  },
+  "athelas": {
+   "cat": "serif"
+  },
+  "charis": {
+   "cat": "serif"
+  },
+  "calibre lh": {
+   "cat": "sans"
+  },
+  "ilisarniq": {
+   "cat": "sans"
+  },
+  "muli": {
+   "cat": "sans"
+  },
+  "tex gyre bonum": {
+   "cat": "serif"
+  },
+  "tex gyre pagella": {
+   "cat": "serif"
+  },
+  "tex gyre termes": {
+   "cat": "serif"
+  },
+  "tex gyre heros": {
+   "cat": "sans"
+  },
+  "tex gyre heros cn": {
+   "cat": "sans"
+  },
+  "titillium": {
+   "cat": "sans"
+  },
+  "sf pro text": {
+   "cat": "sans"
+  },
+  "sf pro display": {
+   "cat": "sans"
+  },
+  "ia writer duo s": {
+   "cat": "mono"
+  },
+  "ia writer quattro s": {
+   "cat": "mono"
+  },
+  "akrobat": {
+   "cat": "sans"
+  },
+  "geomanist": {
+   "cat": "sans"
+  },
+  "butler": {
+   "cat": "serif"
+  },
+  "blanco": {
+   "cat": "serif"
+  },
+  "questa": {
+   "cat": "serif"
+  },
+  "questa grande": {
+   "cat": "serif"
+  },
+  "mosk": {
+   "cat": "sans"
+  },
+  "palatino": {
+   "cat": "serif"
+  },
+  "saira extracondensed": {
+   "cat": "sans"
+  },
+  "morganite": {
+   "cat": "display"
+  },
+  "mont": {
+   "cat": "sans"
+  },
+  "arcon": {
+   "cat": "sans"
+  },
+  "audrey": {
+   "cat": "display"
+  },
+  "amatic": {
+   "cat": "handwriting"
+  },
+  "akira expanded": {
+   "cat": "display"
+  },
+  "american typewriter": {
+   "cat": "slab"
+  },
+  "americantypewriter": {
+   "cat": "slab"
+  },
+  "octin spraypaint": {
+   "cat": "display"
+  },
+  "octin vintage": {
+   "cat": "display"
+  },
+  "blackout 2am": {
+   "cat": "display"
+  },
+  "blackout midnight": {
+   "cat": "display"
+  },
+  "blackout sunrise": {
+   "cat": "display"
+  }
+ }
+}

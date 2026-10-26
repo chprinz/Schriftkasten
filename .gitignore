@@ -1,0 +1,9 @@
+.venv/
+data/catalog.json
+data/catalog-real.json
+data/scan-cache.json
+data/ttc-cache/
+data/userdata.tmp
+data/userdata.bak.json
+config.json
+.DS_Store
