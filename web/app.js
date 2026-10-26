@@ -228,6 +228,7 @@ function renderNav() {
     <div class="nav-h">Werkstatt</div>
     ${item("cleanup", "Aufräumen", { n: dupN + FAMS.filter((f) => f.trial).length + CAT.problems.length })}
     ${item("sources", "Quellen & Einlesen", { n: CAT.sources.filter((s) => s.ok).length })}
+    <button class="nav-i" id="quitBtn" title="Beendet den Hintergrunddienst. Startet wieder über das App-Symbol.">Beenden</button>
   `;
   $("#nav").innerHTML = html;
   $$("#nav .nav-i[data-v]").forEach((b) => {
@@ -238,6 +239,10 @@ function renderNav() {
       b.ondrop = (e) => { e.preventDefault(); b.classList.remove("drop"); const k = e.dataTransfer.getData("text/sk-key"); if (k) toggleCol(b.dataset.v.slice(4), k, true); };
     }
   });
+  $("#quitBtn").onclick = async () => {
+    try { await api("/api/quit", { method: "POST", body: {} }); } catch {}
+    document.body.innerHTML = `<div class="empty" style="padding-top:30vh">Schriftkasten ist beendet. Dieses Fenster kann zu.<br>Neu starten über das App-Symbol.</div>`;
+  };
   const nb = $("#newCol"); if (nb) nb.onclick = (e) => { e.stopPropagation(); newCollection(); };
   const d = new Date(CAT.generated * 1000);
   $("#brandMeta").textContent = `${FAMS.length} Familien · ${d.toLocaleDateString("de-AT")}`;
@@ -782,7 +787,7 @@ async function init() {
     [UD, CUR] = await Promise.all([api("/api/userdata"), api("/api/curated").catch(() => ({}))]);
     CUR.families ||= {}; UD.families ||= {}; UD.collections ||= [];
   } catch (e) {
-    $("#list").innerHTML = `<div class="empty">Der Schriftkasten-Server läuft nicht.<br>Im Terminal <code>./schriftkasten</code> starten.</div>`;
+    $("#list").innerHTML = `<div class="empty">Der Schriftkasten-Server läuft nicht.<br>Über das Schriftkasten-Symbol neu starten.</div>`;
     return;
   }
   setupIO(); wireBar(); renderBar();

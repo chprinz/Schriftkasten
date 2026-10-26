@@ -6,24 +6,21 @@ Kein Abo, keine Cloud, kein Konto. Alles bleibt auf dem Rechner.
 
 ## Starten
 
-Den Ordner irgendwohin legen, zum Beispiel nach `~/Dev Projects/schriftkasten`, dann im Terminal:
+**Als App:** `Schriftkasten.app` in `~/Applications` doppelklicken, oder das Symbol ins Dock ziehen. Die App startet einen kleinen Dienst im Hintergrund, liest neue Schriften ein und öffnet `http://127.0.0.1:8737` im Browser. Ist der Dienst schon aktiv, öffnet ein weiterer Klick nur das Fenster. Ein Terminal ist dafür nicht nötig.
+
+Beim allerersten Start richtet die App eine eigene Python-Umgebung ein (etwa eine Minute, eine Mitteilung erscheint). Sie braucht `python3`, das über Homebrew oder pyenv vorhanden ist.
+
+Beenden: links unten in der Seitenleiste auf „Beenden“. Wer es vergisst: Nach acht Stunden ohne Benutzung beendet sich der Dienst selbst.
+
+Die App neu bauen (nach Änderungen am Code): `./macos/build_app.sh`, danach `dist/Schriftkasten.app` nach `~/Applications` kopieren.
+
+**Aus dem Terminal** (für Entwicklung):
 
 ```
-cd ~/Dev\ Projects/schriftkasten
-./schriftkasten
+./schriftkasten          # geänderte Dateien einlesen, Oberfläche öffnen
+./schriftkasten full     # alles neu einlesen
+./schriftkasten scan     # nur einlesen
 ```
-
-Beim ersten Start richtet sich eine eigene Python-Umgebung ein (dauert eine Minute, braucht `python3`, das über Homebrew oder pyenv schon da ist). Danach werden die Schriften eingelesen und der Browser öffnet `http://127.0.0.1:8737`.
-
-Alternativ: `Schriftkasten.command` im Finder doppelklicken. macOS fragt beim ersten Mal nach, weil die Datei aus dem Netz kommt. Falls es sich weigert, einmal im Terminal `xattr -dr com.apple.quarantine .` im Ordner ausführen.
-
-Beenden mit `ctrl-c` im Terminal.
-
-| Befehl | Was passiert |
-|---|---|
-| `./schriftkasten` | geänderte Dateien einlesen, Oberfläche öffnen |
-| `./schriftkasten full` | alles neu einlesen, Oberfläche öffnen |
-| `./schriftkasten scan` | nur einlesen |
 
 Das Einlesen von rund 1.300 Dateien dauert unter zehn Sekunden. Danach werden nur neue oder geänderte Dateien gelesen.
 
@@ -39,7 +36,7 @@ Das Einlesen von rund 1.300 Dateien dauert unter zehn Sekunden. Danach werden nu
 
 **Adobe Fonts:** Creative Cloud legt aktivierte Schriften in einem versteckten Ordner ab, mit Nummern statt Namen. Der Schriftkasten liest sie dort aus und holt sich Familie und Adobe-Link aus der `entitlements.xml` daneben. Wer in Creative Cloud oder auf fonts.adobe.com etwas aktiviert oder deaktiviert, klickt danach auf „Neu einlesen“. Favoriten und Web-Projekte liegen nur online bei Adobe und lassen sich von hier nicht abrufen.
 
-**Weitere Ordner** (externe Platte, Projektordner): `config.example.json` nach `config.json` kopieren und unter `extraSources` eintragen. Dort lässt sich auch der Archiv-Ordner ändern und mit `"includeSystem": true` die macOS-Systemschriften dazunehmen.
+**Weitere Ordner** (externe Platte, Projektordner): `config.example.json` als `config.json` nach `~/Library/Application Support/Schriftkasten/` kopieren und unter `extraSources` eintragen. Dort lässt sich auch der Archiv-Ordner ändern und mit `"includeSystem": true` die macOS-Systemschriften dazunehmen.
 
 ## Was die Oberfläche kann
 
@@ -81,6 +78,8 @@ Unter **Werkstatt → Aufräumen**:
 „Aussortieren“ verschiebt Dateien aus `~/Library/Fonts` nach `~/Schriften-Archiv`. Gelöscht wird nichts. Aus dem Archiv holt „Installieren“ eine Schrift zurück. Programme wie Premiere, DaVinci oder InDesign bemerken das nach einem Neustart.
 
 ## Deine Daten
+
+Die App speichert alles in `~/Library/Application Support/Schriftkasten/`, der Terminal-Start im Ordner `data/` des Repos. Dort liegt auch `server.log`, falls etwas nicht startet, und optional `config.json`.
 
 | Datei | Inhalt |
 |---|---|

@@ -30,7 +30,8 @@ except ImportError:
 logging.getLogger("fontTools").setLevel(logging.ERROR)
 
 HERE = Path(__file__).resolve().parent
-DATA = HERE / "data"
+DATA = Path(os.environ["SK_DATA"]) if os.environ.get("SK_DATA") else HERE / "data"
+STATIC = HERE / "data"
 HOME = Path.home()
 CACHE_VERSION = 3
 FONT_EXT = {".ttf", ".otf", ".ttc", ".otc", ".woff", ".woff2", ".dfont"}
@@ -51,7 +52,9 @@ GREEK = range(0x0391, 0x03CA)
 
 
 def load_config():
-    cfg_path = HERE / "config.json"
+    cfg_path = DATA / "config.json"
+    if not cfg_path.exists():
+        cfg_path = HERE / "config.json"
     if cfg_path.exists():
         try:
             return json.loads(cfg_path.read_text("utf-8"))
@@ -503,7 +506,7 @@ def main():
         keep = set(args.only.split(","))
         sources = [s for s in sources if s["id"] in keep]
 
-    DATA.mkdir(exist_ok=True)
+    DATA.mkdir(parents=True, exist_ok=True)
     cache_path = DATA / "scan-cache.json"
     cache = {}
     if cache_path.exists() and not args.full:
@@ -513,7 +516,7 @@ def main():
                 cache = {}
         except Exception:
             cache = {}
-    gf_path = DATA / "google-fonts-meta.json"
+    gf_path = STATIC / "google-fonts-meta.json"
     gf = json.loads(gf_path.read_text("utf-8")) if gf_path.exists() else {}
 
     print("Schriftkasten liest Schriften ein …")

@@ -7,3 +7,4 @@ data/userdata.tmp
 data/userdata.bak.json
 config.json
 .DS_Store
+dist/

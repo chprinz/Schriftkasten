@@ -22,7 +22,7 @@ from urllib.parse import urlparse, unquote
 
 HERE = Path(__file__).resolve().parent
 WEB = HERE / "web"
-DATA = HERE / "data"
+DATA = Path(os.environ["SK_DATA"]) if os.environ.get("SK_DATA") else HERE / "data"
 CATALOG = DATA / "catalog.json"
 USERDATA = DATA / "userdata.json"
 CURATED = HERE / "curated.json"
@@ -36,6 +36,8 @@ FONT_TYPES = {
 }
 
 _lock = threading.Lock()
+_last_seen = [time.time()]
+IDLE_HOURS = float(os.environ.get("SK_IDLE_HOURS", "8"))
 _catalog = {"mtime": 0, "data": None}
 
 
@@ -50,7 +52,9 @@ def load_catalog():
 
 
 def archive_dir():
-    cfg = HERE / "config.json"
+    cfg = DATA / "config.json"
+    if not cfg.exists():
+        cfg = HERE / "config.json"
     d = "~/Schriften-Archiv"
     if cfg.exists():
         try:
@@ -144,6 +148,9 @@ class Handler(BaseHTTPRequestHandler):
         if not self._host_ok():
             return self._send(403, {"error": "nur lokal"})
         path = unquote(urlparse(self.path).path)
+        _last_seen[0] = time.time()
+        if path == "/api/ping":
+            return self._send(200, {"app": "schriftkasten", "pid": os.getpid()})
         if path in ("/", "/index.html"):
             return self._static(WEB / "index.html")
         if path.startswith("/web/"):
@@ -156,7 +163,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/userdata":
             with _lock:
                 if not USERDATA.exists():
-                    DATA.mkdir(exist_ok=True)
+                    DATA.mkdir(parents=True, exist_ok=True)
                     USERDATA.write_text(json.dumps(initial_userdata(), ensure_ascii=False, indent=1), "utf-8")
                 return self._static(USERDATA, "application/json; charset=utf-8")
         if path == "/api/curated":
@@ -215,6 +222,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         path = urlparse(self.path).path
         body = self._json_body()
+        if path == "/api/quit":
+            self._send(200, {"ok": True})
+            threading.Timer(0.3, lambda: os._exit(0)).start()
+            return
         if path == "/api/rescan":
             code, out = run_scan()
             return self._send(200 if code == 0 else 500, {"ok": code == 0, "log": out})
@@ -281,9 +292,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=int(os.environ.get("SK_PORT", 8737)))
     ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--scan", action="store_true", help="vor dem Start Änderungen einlesen")
     args = ap.parse_args()
-    if not CATALOG.exists():
-        print("Noch kein Katalog, lese zuerst ein …")
+    if args.scan or not CATALOG.exists():
+        print("Lese Schriften ein …")
         code, out = run_scan()
         print(out)
     srv = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
@@ -291,6 +303,13 @@ def main():
     print(f"Schriftkasten läuft: {url}  (Beenden mit ctrl-c)")
     if not args.no_browser:
         threading.Timer(0.6, lambda: webbrowser.open(url)).start()
+    def idle_watch():
+        while True:
+            time.sleep(300)
+            if IDLE_HOURS > 0 and time.time() - _last_seen[0] > IDLE_HOURS * 3600:
+                print("Länger nicht benutzt, beende.")
+                os._exit(0)
+    threading.Thread(target=idle_watch, daemon=True).start()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
