@@ -18,7 +18,18 @@ fail() {
 }
 running() { /usr/bin/curl -s -m 1 "${URL}api/ping" 2>/dev/null | grep -q schriftkasten; }
 
-if running; then open "$URL"; exit 0; fi
+# Läuft schon? Bei gleicher Version nur öffnen, sonst alte Version beenden.
+WANT="$(grep -m1 '^APP_VERSION' "$APP_RES/serve.py" | cut -d'"' -f2)"
+if running; then
+  HAVE="$(/usr/bin/curl -s -m 1 "${URL}api/ping" | sed -n 's/.*"version": *"\([^"]*\)".*/\1/p')"
+  if [ "$HAVE" = "$WANT" ]; then open "$URL"; exit 0; fi
+  /usr/bin/curl -s -m 2 -X POST -H "X-Schriftkasten: 1" -H "Content-Type: application/json" -d '{}' "${URL}api/quit" >/dev/null 2>&1
+  for i in $(seq 1 20); do running || break; sleep 0.3; done
+  if running; then
+    PID="$(/usr/bin/curl -s -m 1 "${URL}api/ping" | sed -n 's/.*"pid": *\([0-9]*\).*/\1/p')"
+    [ -n "$PID" ] && kill "$PID" 2>/dev/null; sleep 1
+  fi
+fi
 
 # Python-Umgebung einmalig einrichten
 VENV="$SUP/venv"

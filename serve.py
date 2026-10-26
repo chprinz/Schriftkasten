@@ -35,6 +35,7 @@ FONT_TYPES = {
     "ttc": "font/ttf", "otc": "font/otf", "dfont": "application/octet-stream",
 }
 
+APP_VERSION = "1.2"
 _lock = threading.Lock()
 _last_seen = [time.time()]
 IDLE_HOURS = float(os.environ.get("SK_IDLE_HOURS", "8"))
@@ -150,7 +151,7 @@ class Handler(BaseHTTPRequestHandler):
         path = unquote(urlparse(self.path).path)
         _last_seen[0] = time.time()
         if path == "/api/ping":
-            return self._send(200, {"app": "schriftkasten", "pid": os.getpid()})
+            return self._send(200, {"app": "schriftkasten", "version": APP_VERSION, "pid": os.getpid()})
         if path in ("/", "/index.html"):
             return self._static(WEB / "index.html")
         if path.startswith("/web/"):
@@ -189,7 +190,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _static(self, p, ctype=None):
         p = Path(p).resolve()
-        if not str(p).startswith(str(HERE)) or not p.is_file():
+        roots = [HERE.resolve(), DATA.resolve()]
+        if not any(r == p or r in p.parents for r in roots) or not p.is_file():
             return self._send(404, {"error": "nicht gefunden"})
         ctype = ctype or (mimetypes.guess_type(str(p))[0] or "application/octet-stream")
         if ctype.startswith("text/") or ctype.endswith("javascript"):
