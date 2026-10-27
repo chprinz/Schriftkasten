@@ -182,6 +182,7 @@ function inView(f, v) {
   if (v === "adobe") return f.srcs.includes("adobe");
   if (v === "google") return f.google;
   if (v.startsWith("origin:")) return f.origin === v.slice(7);
+  if (v === "adobe-off") return !!f.adobeOff;
   if (v.startsWith("find:")) { const p = (CUR.profiles || []).find((p) => p.id === v.slice(5)); return p ? p.items.includes(f.key) : false; }
   if (v === "rated") return (ud(f.key).rating || 0) > 0;
   if (v === "noted") return !!ud(f.key).note || (ud(f.key).tags || []).length > 0;
@@ -239,7 +240,7 @@ function renderNav() {
       ${item("new", "Neu (120 Tage)", { hideEmpty: true })}
       ${item("rated", "Bewertet")}`)}
     ${(CUR.profiles || []).length ? grp("find", "Ich suche …", (CUR.profiles || []).map((p) => item("find:" + p.id, p.name, { title: p.desc })).join("")) : ""}
-    ${grp("herkunft", "Herkunft & Lizenz", Object.entries(ORIGINS).map(([k, [l, t]]) => item("origin:" + k, l, { title: t, hideEmpty: k !== "adobe", dot: ORIGIN_DOT[k] })).join(""))}
+    ${grp("herkunft", "Herkunft & Lizenz", Object.entries(ORIGINS).map(([k, [l, t]]) => item("origin:" + k, l, { title: t, hideEmpty: k !== "adobe", dot: ORIGIN_DOT[k] }) + (k === "adobe" ? item("adobe-off", "Adobe: nicht aktiv", { hideEmpty: true, dot: "transparent", title: "Von Creative Cloud deaktiviert. Bleiben in Sammlungen sichtbar." }) : "")).join(""))}
     ${grp("art", "Art", Object.entries(CATS).map(([k, l]) => item("cat:" + k, l, { hideEmpty: true })).join(""))}
     ${grp("stufe", "Einstufung", Object.entries(TIERS).map(([k, [l, t]]) => item("tier:" + k, l, { title: t })).join(""))}
     <div class="nav-h">Sammlungen <button id="newCol" title="Neue Sammlung">+</button></div>
@@ -303,12 +304,17 @@ function renderHead(n) {
   const v = S.view;
   let title = "Alle Familien", sub = "", tools = "";
   if (v === "installed") { title = "Installiert"; sub = "Alles, was macOS gerade aktiv hat: ~/Library/Fonts, /Library/Fonts und aktivierte Adobe Fonts."; }
-  else if (v === "library") { title = "Nicht aktiv"; sub = "Liegt in FontBase oder im Archiv. Mit „Installieren“ landet eine Kopie in ~/Library/Fonts."; }
+  else if (v === "library") { title = "Nicht aktiv"; sub = "Liegt in FontBase oder im Archiv (Installieren kopiert nach ~/Library/Fonts), oder ist ein von Creative Cloud deaktivierter Adobe Font."; }
   else if (v === "origin:adobe") {
     title = "Adobe Fonts";
     const n = count("adobe");
     sub = n ? "Aktivierte Adobe Fonts aus Creative Cloud. Neu aktivierte Schriften erscheinen nach „Neu einlesen“." : "Keine aktivierten Adobe Fonts gefunden. Creative Cloud aktiviert sie lokal, danach hier „Neu einlesen“.";
     tools = `<a class="btn" href="https://fonts.adobe.com/my_fonts#active_fonts" target="_blank" rel="noopener">Meine Adobe Fonts</a><a class="btn" href="https://fonts.adobe.com/fonts" target="_blank" rel="noopener">Adobe Fonts durchsuchen</a><button class="btn" data-act="rescan">Neu einlesen</button>`;
+  }
+  else if (v === "adobe-off") {
+    title = "Adobe: nicht aktiv";
+    sub = "Diese Adobe Fonts hat Creative Cloud deaktiviert. Bewertungen, Notizen und Sammlungen bleiben erhalten. Nach dem Aktivieren bei Adobe hier „Neu einlesen“.";
+    tools = `<a class="btn" href="https://fonts.adobe.com/my_fonts#active_fonts" target="_blank" rel="noopener">Meine Adobe Fonts</a><button class="btn primary" data-act="rescan">Neu einlesen</button>`;
   }
   else if (v.startsWith("origin:")) { [title, sub] = ORIGINS[v.slice(7)] || ["", ""]; }
   else if (v.startsWith("find:")) {
@@ -395,7 +401,8 @@ function metaTags(f) {
   if (f.dups.length) t.push(`<span class="tag warn" title="Gleiche Schnitte liegen mehrfach installiert">doppelt</span>`);
   const O = ORIGINS[f.origin];
   if (O && f.origin !== "trial") t.push(`<span class="tag o-${f.origin}" title="${esc(O[1])}">${esc(O[0])}</span>`);
-  t.push(f.installed ? `<span class="tag inst" title="installiert">✓ aktiv</span>` : `<span class="tag notinst" title="nicht installiert">nicht aktiv</span>`);
+  if (f.adobeOff) t.push(`<span class="tag warn" title="Creative Cloud hat diese Schrift deaktiviert.${esc(seenText(f))}">Adobe: nicht aktiv</span>`);
+  else t.push(f.installed ? `<span class="tag inst" title="installiert">✓ aktiv</span>` : `<span class="tag notinst" title="nicht installiert">nicht aktiv</span>`);
   tagsOf(f).forEach((x) => t.push(`<span class="tag user">#${esc(x)}</span>`));
   return t.join("");
 }
@@ -403,7 +410,32 @@ function stars(f) {
   const r = ud(f.key).rating || 0;
   return `<span class="stars" title="Bewertung">${[1, 2, 3].map((i) => `<button data-r="${i}" class="${i <= r ? "on" : ""}">★</button>`).join("")}</span>`;
 }
+function adobeLink(f) {
+  return f.adobeUrl ? `https://fonts.adobe.com/fonts/${encodeURIComponent(f.adobeUrl)}` : `https://fonts.adobe.com/search?query=${encodeURIComponent(f.name)}`;
+}
+function seenText(f) {
+  return f.lastSeen ? ` Zuletzt aktiv am ${new Date(f.lastSeen * 1000).toLocaleDateString("de-AT")}.` : "";
+}
+function ghostRow(f) {
+  const el = h(`<article class="fam ghost" data-key="${esc(f.key)}">
+    <div class="fam-top">
+      <button class="fam-name">${esc(f.name)}</button>
+      <span class="meta">${metaTags(f)}</span>
+      <span class="acts" style="opacity:1">
+        ${stars(f)}
+        <button class="ib${colsOf(f.key).length ? " on" : ""}" data-a="col" title="Zu Sammlung">${colsOf(f.key).length ? "◆" : "◇"}</button>
+      </span>
+    </div>
+    <div class="ghost-body">Von Creative Cloud deaktiviert, keine Vorschau möglich.${esc(seenText(f))}
+      <a class="btn" href="${adobeLink(f)}" target="_blank" rel="noopener">Bei Adobe wieder aktivieren</a></div>
+  </article>`);
+  $(".fam-name", el).onclick = () => openDrawer(f.key);
+  $("[data-a=col]", el).onclick = (e) => colMenu(e.currentTarget, f.key);
+  $$(".stars button", el).forEach((b) => b.onclick = () => { const r = +b.dataset.r; udSet(f.key, { rating: (ud(f.key).rating || 0) === r ? 0 : r }); refreshRow(f.key); renderNav(); });
+  return el;
+}
 function row(f) {
+  if (f.ghost) return ghostRow(f);
   const pf = pickFace(f, S.weight);
   const inCmp = S.compare.includes(f.key);
   const el = h(`<article class="fam" data-key="${esc(f.key)}" draggable="true">
@@ -450,7 +482,7 @@ function setupIO() {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
       const el = e.target; io.unobserve(el);
-      applyFace($(".spec", el), el._face.id, el._face.vs);
+      if (el._face) applyFace($(".spec", el), el._face.id, el._face.vs);
     }
   }, { rootMargin: "900px 0px" });
   new IntersectionObserver((es) => { if (es[0].isIntersecting) moreRows(); }, { rootMargin: "1200px 0px" }).observe($("#sentinel"));
@@ -516,7 +548,7 @@ function renderTray() {
 let cmpMode = "zeilen";
 function openCompare() {
   const o = $("#compare");
-  const fams = S.compare.map((k) => BYKEY[k]);
+  const fams = S.compare.map((k) => BYKEY[k]).filter((f) => f && !f.ghost);
   const txt = S.custom || PRESETS[S.preset][1] || "Victor jagt zwölf Boxkämpfer quer über den großen Sylter Deich.";
   o.innerHTML = `<div class="cmp-bar"><b>Vergleich</b><span class="tag">${fams.length} Familien</span>
       <div class="seg"><button data-m="zeilen" class="${cmpMode === "zeilen" ? "on" : ""}">Zeilen</button><button data-m="absatz" class="${cmpMode === "absatz" ? "on" : ""}">Titel + Absatz</button></div>
@@ -566,8 +598,8 @@ function axesString(face) {
   return parts.length ? parts.join(", ") : "";
 }
 function relatedHtml(f) {
-  const pairs = (f.pairs || []).filter((k) => BYKEY[k]);
-  const sim = (f.similar || []).filter((k) => BYKEY[k]);
+  const pairs = (f.pairs || []).filter((k) => BYKEY[k] && !BYKEY[k].ghost);
+  const sim = (f.similar || []).filter((k) => BYKEY[k] && !BYKEY[k].ghost);
   if (!pairs.length && !sim.length) return "";
   const own = CUR.families[f.key]?.pairs || [];
   const isText = ["serif", "slab"].includes(catOf(f));
@@ -587,8 +619,33 @@ function relatedHtml(f) {
   return `${pairs.length ? `<div class="sec"><div class="sec-h">Passt dazu</div><div class="pairs">${pairs.slice(0, 3).map(pairCard).join("")}</div></div>` : ""}
     ${sim.length ? `<div class="sec"><div class="sec-h">Ähnlich in deinem Bestand</div><div class="sims">${sim.map((k) => { const o = BYKEY[k]; return `<button class="sim" data-rel="${esc(k)}"><span class="sim-s" data-face="${o.rep}">${esc(o.name)}</span><span class="sim-m">${esc(CATS[catOf(o)] || "")} · ${o.nStyles} Schn.${o.installed ? "" : " · nicht aktiv"}</span></button>`; }).join("")}</div></div>` : ""}`;
 }
+function renderGhostDrawer(f) {
+  const u = ud(f.key);
+  const el = $("#drawerIn");
+  el.innerHTML = `<div class="d-head"><div><h2 class="d-title">${esc(f.name)}</h2>
+      <div class="d-by">${esc([f.designer, f.foundry].filter(Boolean).join(" · ") || "Adobe Fonts")}</div>
+      ${CUR.families[f.key]?.note ? `<div class="d-by" style="color:var(--ink-2);max-width:60ch">${esc(CUR.families[f.key].note)}</div>` : ""}
+      <div class="meta" style="margin-top:8px">${metaTags(f)}</div></div>
+      <div class="d-nav"><button class="ib" data-d="-1">‹</button><button class="ib" data-d="1">›</button><button class="ib" id="dClose">✕</button></div></div>
+    <div class="ghost-body" style="margin-top:18px">Creative Cloud hat diese Familie deaktiviert, deshalb gibt es gerade keine Vorschau.${esc(seenText(f))}
+      Bewertung, Notizen und Sammlungen bleiben erhalten. Nach dem Aktivieren bei Adobe im Schriftkasten „Neu einlesen“.</div>
+    <div class="acts" style="opacity:1;margin:12px 0 0;justify-content:flex-start;gap:8px">${stars(f)}
+      <a class="btn primary" href="${adobeLink(f)}" target="_blank" rel="noopener">Bei Adobe wieder aktivieren</a>
+      <button class="btn" data-x="rescan">Neu einlesen</button></div>
+    <div class="sec"><div class="sec-h">Meine Notizen</div><div class="mine">
+      <label><span class="lbl">Notiz</span><textarea id="mNote">${esc(u.note || "")}</textarea></label>
+      <label><span class="lbl">Sammlungen</span><div class="colchecks">${UD.collections.map((c) => `<button class="chip${c.items.includes(f.key) ? " on" : ""}" data-col="${c.id}">${esc(c.name)}</button>`).join("")}</div></label>
+    </div></div>`;
+  $("#dClose").onclick = closeDrawer;
+  $$("[data-d]", el).forEach((b) => b.onclick = () => stepDrawer(+b.dataset.d));
+  $$(".stars button", el).forEach((b) => b.onclick = () => { const r = +b.dataset.r; udSet(f.key, { rating: (u.rating || 0) === r ? 0 : r }); renderDrawer(); refreshRow(f.key); });
+  $("#mNote").onchange = (e) => udSet(f.key, { note: e.target.value.trim() });
+  $$("[data-col]", el).forEach((b) => b.onclick = () => toggleCol(b.dataset.col, f.key));
+  $("[data-x=rescan]", el).onclick = (e) => rescan(e.currentTarget);
+}
 function renderDrawer() {
   const f = BYKEY[S.open]; if (!f) return closeDrawer();
+  if (f.ghost) return renderGhostDrawer(f);
   const faces = f.faceIds.map((id) => FACES[id]);
   const face = FACES[S.dFace] || FACES[f.rep];
   S.dFace = face.id;
@@ -627,7 +684,7 @@ function renderDrawer() {
       ${stars(f)}
       <button class="btn" data-x="col">${colsOf(f.key).length ? "◆ " + esc(colsOf(f.key).map((c) => c.name).join(", ")) : "◇ Zu Sammlung"}</button>
       <button class="btn" data-x="cmp">${S.compare.includes(f.key) ? "Im Vergleich ✓" : "⊕ Vergleichen"}</button>
-      ${f.installed < f.nStyles ? `<button class="btn primary" data-x="install">Installieren</button>` : ""}
+      ${f.adobeOff ? `<a class="btn primary" href="${adobeLink(f)}" target="_blank" rel="noopener">Bei Adobe wieder aktivieren</a>` : f.installed < f.nStyles ? `<button class="btn primary" data-x="install">Installieren</button>` : ""}
       <button class="btn" data-x="reveal">Im Finder zeigen</button>
       ${fontsUrl(f)}
     </div>

@@ -760,6 +760,57 @@ def relate_families(families, curated, favored=frozenset()):
         f["pairs"] = pairs[:4]
 
 
+def active_postscript_names():
+    """PostScript-Namen aller Schriften, die macOS gerade wirklich aktiv hat (None, wenn nicht ermittelbar)."""
+    test = os.environ.get("SK_ACTIVE_PS_FILE")
+    if test:
+        try:
+            return set(json.loads(Path(test).read_text("utf-8")))
+        except Exception:
+            return None
+    if sys.platform != "darwin":
+        return None
+    try:
+        from AppKit import NSFontManager
+        return set(str(n) for n in NSFontManager.sharedFontManager().availableFonts())
+    except Exception:
+        return None
+
+
+def adobe_memory(families):
+    """Merkt sich Adobe-Familien. Fehlen sie später, bleiben sie als 'nicht aktiv' im Katalog."""
+    path = DATA / "adobe-seen.json"
+    try:
+        seen = json.loads(path.read_text("utf-8"))
+    except Exception:
+        seen = {}
+    now = int(time.time())
+    present = {f["key"] for f in families}
+    for f in families:
+        if "adobe" in f["srcs"]:
+            if f["installed"] > 0:
+                snap = {k: v for k, v in f.items() if k not in ("faceIds", "rep", "dups", "ps")}
+                snap["lastSeen"] = now
+                seen[f["key"]] = snap
+            else:
+                f["adobeOff"] = True
+                if f["key"] in seen:
+                    f["lastSeen"] = seen[f["key"]].get("lastSeen")
+    ghosts = []
+    for k, snap in seen.items():
+        if k in present:
+            continue
+        g = dict(snap)
+        g.update(ghost=True, adobeOff=True, faceIds=[], rep=None, installed=0, dups=[], ps=[], srcs=["adobe"],
+                 similar=[], pairs=[])
+        ghosts.append(g)
+    try:
+        path.write_text(json.dumps(seen, ensure_ascii=False), "utf-8")
+    except Exception:
+        pass
+    return ghosts
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--system", action="store_true", help="auch macOS-Systemschriften einlesen")
@@ -797,6 +848,11 @@ def main():
     print("Schriftkasten liest Schriften ein …")
     t0 = time.time()
     faces, problems, srcinfo, new_cache = scan(sources, cache)
+    active = active_postscript_names()
+    if active is not None:
+        for fc in faces:
+            if fc["src"] == "adobe":
+                fc["installed"] = bool(fc["ps"]) and fc["ps"] in active
     curated, favored = {}, set()
     try:
         cj = json.loads((HERE / "curated.json").read_text("utf-8"))
@@ -808,6 +864,8 @@ def main():
         pass
     families = build_families(faces, gf, system_families(), curated)
     relate_families(families, curated, favored)
+    ghosts = adobe_memory(families)
+    families = sorted(families + ghosts, key=lambda f: f["name"].lower())
 
     # Dateien mit identischem Inhalt an mehreren Orten
     by_hash = {}
@@ -823,6 +881,7 @@ def main():
         "faces": {f["id"]: f for f in faces},
         "problems": problems,
         "identicalFiles": same_files,
+        "adobeCheck": "macos" if active is not None else "dateien",
     }
     (DATA / "catalog.json").write_text(json.dumps(catalog, ensure_ascii=False, separators=(",", ":")), "utf-8")
     new_cache["_v"] = CACHE_VERSION

@@ -283,3 +283,8 @@ a.btn { text-decoration: none; display: inline-flex; align-items: center; }
 .sim:hover { border-color: var(--ink-2); }
 .sim-s { font-size: 22px; line-height: 1.25; color: var(--spec-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sim-m { font: 10.5px var(--mono); color: var(--muted); }
+
+/* Von Adobe deaktivierte Familien */
+.fam.ghost .fam-name { color: var(--muted); }
+.ghost-body { margin-top: 8px; padding: 12px 14px; border: 1px dashed var(--line-2); border-radius: 8px; color: var(--muted); font-size: 13px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.list.grid .fam.ghost .ghost-body { order: -1; min-height: 110px; justify-content: center; text-align: center; }

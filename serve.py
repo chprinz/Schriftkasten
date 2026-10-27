@@ -35,7 +35,7 @@ FONT_TYPES = {
     "ttc": "font/ttf", "otc": "font/otf", "dfont": "application/octet-stream",
 }
 
-APP_VERSION = "1.3"
+APP_VERSION = "1.4"
 _lock = threading.Lock()
 _last_seen = [time.time()]
 IDLE_HOURS = float(os.environ.get("SK_IDLE_HOURS", "8"))
@@ -270,6 +270,9 @@ class Handler(BaseHTTPRequestHandler):
             seen.add(str(p))
             if face.get("installed"):
                 skipped.append({"file": p.name, "why": "schon installiert"})
+                continue
+            if face["src"] == "adobe":
+                skipped.append({"file": p.name, "why": "Adobe Fonts werden über Creative Cloud aktiviert"})
                 continue
             target = USER_FONTS / p.name
             if target.exists():
