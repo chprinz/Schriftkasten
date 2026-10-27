@@ -1,5 +1,130 @@
 {
- "about": "Erste Kuratierung (Oktober 2026) auf Basis von ~/Library/Fonts. Sammlungen werden beim ersten Start übernommen und gehören dann dir. Kategorien und Notizen hier dienen als Vorgabe, eigene Einträge haben Vorrang.",
+ "about": "Kuratierung Oktober 2026 auf Basis von ~/Library/Fonts. Sammlungen werden beim ersten Start übernommen und gehören dann dir. Suchprofile, Notizen, Paarungen und Zuordnungen hier sind Vorgaben; eigene Einträge haben Vorrang.",
+ "profiles": [
+  {
+   "id": "grotesk-charakter",
+   "name": "Grotesk mit dezentem Charakter",
+   "desc": "Sachlich genug für Kundenarbeit, aber mit eigener Note in Details wie a, g, t oder den Rundungen. Oben die stärksten Kandidaten.",
+   "items": [
+    "instrument sans",
+    "real text",
+    "bricolage grotesque",
+    "calibre lh",
+    "space grotesk",
+    "ilisarniq",
+    "gill sans",
+    "fira sans",
+    "geomanist",
+    "object sans",
+    "work sans",
+    "futura pt",
+    "josefin sans",
+    "atkinson hyperlegible",
+    "chivo",
+    "barlow",
+    "mosk",
+    "asap",
+    "rubik",
+    "tomorrow"
+   ]
+  },
+  {
+   "id": "grotesk-neutral",
+   "name": "Neutrale Grotesk",
+   "desc": "Wenn die Schrift verschwinden soll: Interfaces, Bauchbinden, Tabellen, Fließtext am Bildschirm.",
+   "items": [
+    "inter",
+    "ibm plex sans",
+    "source sans pro",
+    "sf pro text",
+    "avenir next",
+    "roboto",
+    "nunito sans",
+    "lato",
+    "open sans",
+    "tex gyre heros",
+    "heebo",
+    "catamaran",
+    "titillium web",
+    "muli"
+   ]
+  },
+  {
+   "id": "serif-logo",
+   "name": "Serif für Logo & Wortmarke",
+   "desc": "Serifen mit Gesicht: markante Formen, die auch als einzelnes Wort tragen.",
+   "items": [
+    "fraunces",
+    "instrument serif",
+    "gloock",
+    "butler",
+    "blanco",
+    "dm serif display",
+    "cormorant infant",
+    "big caslon",
+    "prata",
+    "abril fatface",
+    "questa grande",
+    "elsie",
+    "spectral sc",
+    "inknut antiqua",
+    "marcellus",
+    "sorts mill goudy",
+    "vidaloka",
+    "hepta slab"
+   ]
+  },
+  {
+   "id": "serif-text",
+   "name": "Serif für Fließtext",
+   "desc": "Ruhige Lese-Serifen mit Kursive und guten Umlauten. Für Konzepte, Programmhefte, lange Texte.",
+   "items": [
+    "literata",
+    "source serif pro",
+    "spectral",
+    "newsreader",
+    "crimson pro",
+    "charis",
+    "ibm plex serif",
+    "vollkorn",
+    "athelas",
+    "petrona",
+    "palatino",
+    "pt serif",
+    "crimson text",
+    "gentium plus",
+    "libre baskerville",
+    "noto serif",
+    "domine",
+    "cardo",
+    "tex gyre pagella",
+    "poltawski nowy"
+   ]
+  },
+  {
+   "id": "titel-kraeftig",
+   "name": "Titel mit Wirkung",
+   "desc": "Kräftig oder schmal und hoch: für Vorspann, Plakat, Thumbnails. Meist nur für wenige Wörter.",
+   "items": [
+    "bebas neue",
+    "oswald",
+    "anton",
+    "staatliches",
+    "big shoulders text",
+    "barlow condensed",
+    "gloock",
+    "abril fatface",
+    "dm serif display",
+    "clash display variable",
+    "morganite",
+    "yanone kaffeesatz",
+    "teko",
+    "alfa slab one",
+    "saira stencil one",
+    "akrobat"
+   ]
+  }
+ ],
  "collections": [
   {
    "id": "haus",
@@ -137,86 +262,47 @@
   }
  ],
  "families": {
-  "inter": {
-   "note": "Bildschirmschrift schlechthin. Neutral, sehr vollständig, viele OpenType-Funktionen (tnum, ss01, cv-Varianten)."
-  },
-  "ibm plex sans": {
-   "note": "Etwas technischer Charakter, große Familie mit Serif, Mono und Condensed zum Kombinieren."
-  },
-  "source sans pro": {
-   "note": "Ruhig und humanistisch, sehr gute Lesbarkeit in kleinen Größen."
-  },
-  "fira sans": {
-   "note": "Offen und klar, für Untertitel und Interfaces gemacht."
-  },
-  "atkinson hyperlegible": {
-   "note": "Für maximale Unterscheidbarkeit der Zeichen entworfen. Gut für Untertitel und barrierearme Inhalte."
-  },
-  "real text": {
-   "note": "FF Real: in lpp-Dokumenten im Einsatz. Feine Abstufung der Stärken von Hairline bis Black."
-  },
-  "instrument sans": {
-   "note": "Im cv-studio-Stil im Einsatz. Variabel in Breite und Stärke."
-  },
-  "fraunces": {
-   "note": "Variable Serif mit Achsen für Weichheit (SOFT) und Eigensinn (WONK). Im cv-studio-Stil im Einsatz."
-  },
-  "instrument serif": {
-   "note": "Schmale, elegante Display-Serif. Nur ein Schnitt plus Kursive, also eher für Titel."
-  },
-  "literata": {
-   "note": "Für langes Lesen gebaut, mit optischer Größe (opsz)."
-  },
-  "spectral": {
-   "note": "Leichte, helle Lese-Serif, sehr gut am Bildschirm."
-  },
-  "newsreader": {
-   "note": "Zeitungs-Serif mit optischer Größe, kräftiger als Spectral."
-  },
-  "barlow": {
-   "note": "Leicht abgerundete Grotesk mit Straßenschild-Anmutung. Liegt doppelt als OTF und TTF, siehe Aufräumen."
-  },
-  "barlow semi condensed": {
-   "note": "Guter Kompromiss für Bauchbinden mit langen Namen."
-  },
-  "avenir next": {
-   "note": "Klassiker, geometrisch aber freundlich. Vorsicht: Lizenz für Weitergabe/Web prüfen."
-  },
-  "bebas neue": {
-   "note": "Nur Versalien. Für kurze Titel, nicht für Sätze."
-  },
-  "big shoulders display": {
-   "note": "Schmal und kräftig, für Plakate und große Titel."
-  },
-  "iosevka": {
-   "note": "Sehr schmale Mono, riesige Dateien (je ca. 40 MB). Nur behalten, wenn du sie brauchst."
-  },
   "athelas": {
-   "cat": "serif"
+   "cat": "serif",
+   "note": "Schöne Buchschrift mit feinem Charakter. Liegt bei macOS bei.",
+   "pairs": [
+    "avenir next",
+    "gill sans"
+   ]
   },
   "charis": {
-   "cat": "serif"
+   "cat": "serif",
+   "note": "Robuste Lese-Serif (Charter-Familie), sehr gut lesbar auch in kleinen Größen.",
+   "pairs": [
+    "source sans pro",
+    "fira sans"
+   ]
   },
   "calibre lh": {
-   "cat": "sans"
+   "cat": "sans",
+   "note": "Klim-Grotesk, sachlich mit weichen Details. Kommerziell: Lizenz prüfen."
   },
   "ilisarniq": {
-   "cat": "sans"
+   "cat": "sans",
+   "note": "Geometrisch-ruhig mit freundlicher Rundung. Lizenz prüfen."
   },
   "muli": {
-   "cat": "sans"
+   "cat": "sans",
+   "note": "Frühere Version von Mulish. Minimalistisch, rund, neutral."
   },
   "tex gyre bonum": {
    "cat": "serif"
   },
   "tex gyre pagella": {
-   "cat": "serif"
+   "cat": "serif",
+   "note": "Freie Palatino-Variante."
   },
   "tex gyre termes": {
    "cat": "serif"
   },
   "tex gyre heros": {
-   "cat": "sans"
+   "cat": "sans",
+   "note": "Freier Helvetica-Ersatz. Neutral bis kühl."
   },
   "tex gyre heros cn": {
    "cat": "sans"
@@ -225,7 +311,8 @@
    "cat": "sans"
   },
   "sf pro text": {
-   "cat": "sans"
+   "cat": "sans",
+   "note": "Apples Systemschrift. Nur für Apple-Plattformen lizenziert, nicht für Kundenarbeit."
   },
   "sf pro display": {
    "cat": "sans"
@@ -237,37 +324,47 @@
    "cat": "mono"
   },
   "akrobat": {
-   "cat": "sans"
+   "cat": "sans",
+   "note": "Schmale Grotesk mit vielen Stärken. Lizenz prüfen."
   },
   "geomanist": {
-   "cat": "sans"
+   "cat": "sans",
+   "note": "Geometrisch, sauber, etwas wärmer als Futura. Nur zwei Schnitte vorhanden."
   },
   "butler": {
-   "cat": "serif"
+   "cat": "serif",
+   "note": "Didone-artige Display-Serif, elegant mit vielen Stärken. Lizenz prüfen.",
+   "pairs": [
+    "work sans",
+    "inter"
+   ]
   },
   "blanco": {
-   "cat": "serif"
+   "cat": "serif",
+   "note": "Zeitgenössische Serif mit weichen Formen, auch für Text brauchbar. Lizenz prüfen."
   },
   "questa": {
    "cat": "serif"
   },
   "questa grande": {
-   "cat": "serif"
+   "cat": "serif",
+   "note": "Display-Variante der Questa: kontrastreich, klar gezeichnet."
   },
   "mosk": {
-   "cat": "sans"
+   "cat": "sans",
+   "note": "Geometrisch-weich, freundlich. Lizenz prüfen."
   },
   "palatino": {
-   "cat": "serif"
-  },
-  "saira extracondensed": {
-   "cat": "sans"
+   "cat": "serif",
+   "note": "Zapfs Klassiker, warm und lesbar. Liegt bei macOS bei."
   },
   "morganite": {
-   "cat": "display"
+   "cat": "display",
+   "note": "Extrem schmal, 18 Stärken. Für große Zahlen und vertikale Formate."
   },
   "mont": {
-   "cat": "sans"
+   "cat": "sans",
+   "note": "Demo-Version mit Wasserzeichen. Nicht verwenden."
   },
   "arcon": {
    "cat": "sans"
@@ -301,6 +398,365 @@
   },
   "blackout sunrise": {
    "cat": "display"
+  },
+  "instrument sans": {
+   "note": "Schlanke, leicht eigenwillige Grotesk mit offener Form. Im cv-studio-Stil im Einsatz.",
+   "pairs": [
+    "instrument serif",
+    "fraunces",
+    "newsreader"
+   ]
+  },
+  "real text": {
+   "note": "FF Real: warm, präzise, mit feinen Stärkenabstufungen. In lpp-Dokumenten im Einsatz.",
+   "pairs": [
+    "literata",
+    "spectral",
+    "fraunces"
+   ]
+  },
+  "bricolage grotesque": {
+   "note": "Grotesk mit Tintenfallen und leichtem Druckcharakter. Warm, etwas eigensinnig.",
+   "pairs": [
+    "fraunces",
+    "literata"
+   ]
+  },
+  "space grotesk": {
+   "note": "Technischer Einschlag aus Space Mono, auffällige G und a. Gut für Titel und kurze Texte.",
+   "pairs": [
+    "newsreader",
+    "ibm plex serif"
+   ]
+  },
+  "gill sans": {
+   "note": "Britischer Klassiker, humanistisch mit Eigenheiten. Liegt bei macOS bei.",
+   "pairs": [
+    "spectral",
+    "athelas"
+   ]
+  },
+  "fira sans": {
+   "note": "Offen und klar, für Bildschirm und Untertitel gemacht. Viele Stärken.",
+   "pairs": [
+    "vollkorn",
+    "charis"
+   ]
+  },
+  "object sans": {
+   "note": "Breite Grotesk mit markanten Rundungen, wirkt zeitgenössisch."
+  },
+  "work sans": {
+   "note": "Breit laufend, leicht grotesk-altmodisch. Gut für Titel und Web.",
+   "pairs": [
+    "spectral",
+    "fraunces"
+   ]
+  },
+  "futura pt": {
+   "note": "Geometrischer Klassiker in sauberer Digitalfassung. Kommerziell.",
+   "pairs": [
+    "libre baskerville",
+    "big caslon"
+   ]
+  },
+  "josefin sans": {
+   "note": "Elegant, geometrisch, mit niedriger x-Höhe. Eher für Titel als für Text.",
+   "pairs": [
+    "cormorant infant",
+    "libre baskerville"
+   ]
+  },
+  "atkinson hyperlegible": {
+   "note": "Für maximale Unterscheidbarkeit der Zeichen entworfen. Gut für Untertitel und barrierearme Inhalte.",
+   "pairs": [
+    "literata",
+    "source serif pro"
+   ]
+  },
+  "chivo": {
+   "note": "Kräftige Grotesk mit leicht amerikanischem Einschlag, stark in Bold und Black."
+  },
+  "barlow": {
+   "note": "Leicht abgerundet, Straßenschild-Anmutung. Familie mit Condensed und Semi Condensed."
+  },
+  "asap": {
+   "note": "Abgerundete Ecken, kompakt, gut am Bildschirm."
+  },
+  "rubik": {
+   "note": "Leicht abgerundete Ecken, freundlich und kräftig."
+  },
+  "tomorrow": {
+   "note": "Eckig-technisch, mit Sci-Fi-Note. Für Titel und Daten-Optik."
+  },
+  "inter": {
+   "note": "Bildschirmschrift schlechthin. Neutral, sehr vollständig, viele OpenType-Funktionen.",
+   "pairs": [
+    "source serif pro",
+    "literata",
+    "newsreader"
+   ]
+  },
+  "ibm plex sans": {
+   "note": "Sachlich mit leicht technischem Charakter. Große Familie mit Serif, Mono, Condensed.",
+   "pairs": [
+    "ibm plex serif",
+    "spectral"
+   ]
+  },
+  "source sans pro": {
+   "note": "Ruhig und humanistisch, sehr gute Lesbarkeit in kleinen Größen.",
+   "pairs": [
+    "source serif pro",
+    "crimson pro"
+   ]
+  },
+  "avenir next": {
+   "note": "Geometrisch aber freundlich, sehr vollständig. Liegt bei macOS bei, Weitergabe nicht erlaubt.",
+   "pairs": [
+    "athelas",
+    "newsreader"
+   ]
+  },
+  "roboto": {
+   "note": "Neutral, technisch, überall verfügbar. Wenig Charakter."
+  },
+  "nunito sans": {
+   "note": "Neutral mit weichen Rundungen."
+  },
+  "lato": {
+   "note": "Warm-neutral, leichte Rundungen in den Bögen."
+  },
+  "open sans": {
+   "note": "Sehr neutral und gut lesbar, inzwischen etwas abgegriffen."
+  },
+  "heebo": {
+   "note": "Roboto-Verwandte mit etwas mehr Ruhe."
+  },
+  "catamaran": {
+   "note": "Leicht schmal, neutral, viele Stärken."
+  },
+  "titillium web": {
+   "note": "Technisch-schmal, gut für Bauchbinden."
+  },
+  "fraunces": {
+   "note": "Variable Serif mit Achsen für Weichheit (SOFT) und Eigensinn (WONK). Im cv-studio-Stil im Einsatz.",
+   "pairs": [
+    "instrument sans",
+    "inter",
+    "work sans"
+   ]
+  },
+  "instrument serif": {
+   "note": "Schmale, elegante Display-Serif mit hohem Kontrast. Nur Regular und Kursiv.",
+   "pairs": [
+    "instrument sans",
+    "inter"
+   ]
+  },
+  "gloock": {
+   "note": "Kräftige Display-Serif mit hohem Kontrast, klassisch-edel.",
+   "pairs": [
+    "inter",
+    "work sans"
+   ]
+  },
+  "dm serif display": {
+   "note": "Hoher Kontrast, kompakt. Gut für kurze Titel.",
+   "pairs": [
+    "inter",
+    "work sans"
+   ]
+  },
+  "cormorant infant": {
+   "note": "Garamond-artig, sehr fein und elegant. Erst ab größeren Größen schön.",
+   "pairs": [
+    "josefin sans",
+    "work sans"
+   ]
+  },
+  "big caslon": {
+   "note": "Klassische Caslon-Display-Version mit viel Kontrast. Liegt bei macOS bei."
+  },
+  "prata": {
+   "note": "Didone mit weichen Tropfen, edel und ruhig."
+  },
+  "abril fatface": {
+   "note": "Fette Didone für große Titel. Nur ein Schnitt."
+  },
+  "elsie": {
+   "note": "Verspielte Display-Serif mit Schwüngen. Für Einladungen, nicht für Ernstes."
+  },
+  "spectral sc": {
+   "note": "Kapitälchen-Fassung der Spectral. Gut für Wortmarken in Versalien."
+  },
+  "inknut antiqua": {
+   "note": "Kräftige Antiqua mit Buchdruck-Anmutung."
+  },
+  "marcellus": {
+   "note": "Flare-Serif mit römischen Versalien. Für Wortmarken mit klassischem Anspruch."
+  },
+  "sorts mill goudy": {
+   "note": "Goudy-Revival, warm und altmodisch."
+  },
+  "vidaloka": {
+   "note": "Kräftige Didone, kompakt. Ein Schnitt."
+  },
+  "hepta slab": {
+   "note": "Slab mit vielen Stärken und freundlichem Ausdruck."
+  },
+  "literata": {
+   "note": "Für langes Lesen gebaut, mit optischer Größe (opsz). Erste Wahl für Fließtext.",
+   "pairs": [
+    "inter",
+    "instrument sans",
+    "ibm plex sans"
+   ]
+  },
+  "source serif pro": {
+   "note": "Klare Übergangs-Antiqua, Gegenstück zu Source Sans.",
+   "pairs": [
+    "source sans pro",
+    "inter"
+   ]
+  },
+  "spectral": {
+   "note": "Helle, leichte Lese-Serif, sehr gut am Bildschirm.",
+   "pairs": [
+    "work sans",
+    "ibm plex sans",
+    "real text"
+   ]
+  },
+  "newsreader": {
+   "note": "Zeitungs-Serif mit optischer Größe, kräftiger als Spectral.",
+   "pairs": [
+    "inter",
+    "instrument sans"
+   ]
+  },
+  "crimson pro": {
+   "note": "Garamond-nahe Buchschrift, ruhig und elegant.",
+   "pairs": [
+    "work sans",
+    "source sans pro"
+   ]
+  },
+  "ibm plex serif": {
+   "note": "Sachliche Serif, passt zu Plex Sans und Mono."
+  },
+  "vollkorn": {
+   "note": "Kräftige, warme Buchschrift mit vielen Stärken.",
+   "pairs": [
+    "fira sans",
+    "source sans pro"
+   ]
+  },
+  "petrona": {
+   "note": "Variable Serif mit leicht kalligrafischem Einschlag."
+  },
+  "pt serif": {
+   "note": "Robuste Serif, passt zu PT Sans. Liegt bei macOS bei."
+  },
+  "crimson text": {
+   "note": "Vorgänger der Crimson Pro, etwas weicher."
+  },
+  "gentium plus": {
+   "note": "Ruhige Buchschrift mit sehr großer Sprachabdeckung."
+  },
+  "libre baskerville": {
+   "note": "Baskerville fürs Web, relativ große x-Höhe."
+  },
+  "noto serif": {
+   "note": "Neutral, sehr vollständig, wenig Charakter."
+  },
+  "domine": {
+   "note": "Kräftige Serif für Bildschirm-Fließtext."
+  },
+  "cardo": {
+   "note": "Klassisch-humanistisch, Bembo-artig. Nur wenige Schnitte."
+  },
+  "poltawski nowy": {
+   "note": "Polnische Antiqua, eigenständig und warm."
+  },
+  "bebas neue": {
+   "note": "Nur Versalien, schmal und hoch. Für kurze Titel, nicht für Sätze.",
+   "pairs": [
+    "source sans pro",
+    "literata"
+   ]
+  },
+  "oswald": {
+   "note": "Schmale Grotesk, kräftig. Für Titel und Bauchbinden mit langen Namen.",
+   "pairs": [
+    "source sans pro",
+    "spectral"
+   ]
+  },
+  "anton": {
+   "note": "Sehr fette, schmale Grotesk für Plakate."
+  },
+  "staatliches": {
+   "note": "Versal-Display, kantig, etwas retro."
+  },
+  "big shoulders text": {
+   "note": "Schmal und hoch, Chicago-Anmutung. Für Plakate und große Titel.",
+   "pairs": [
+    "ibm plex sans",
+    "source serif pro"
+   ]
+  },
+  "barlow condensed": {
+   "note": "Kondensierte Barlow, viele Stärken. Sehr gut für Bauchbinden."
+  },
+  "clash display variable": {
+   "note": "Zeitgenössische Display-Grotesk mit Eigenheiten. Lizenz prüfen."
+  },
+  "yanone kaffeesatz": {
+   "note": "Schmal mit Kaffeehaus-Charme der 1920er."
+  },
+  "teko": {
+   "note": "Schmal, technisch, mit eckigen Rundungen."
+  },
+  "alfa slab one": {
+   "note": "Fette Slab für kräftige Titel."
+  },
+  "saira stencil one": {
+   "note": "Schablonenschrift, technisch-sportlich."
+  },
+  "caveat": {
+   "note": "Natürliche Handschrift, gut lesbar. Für Notizen im Bild.",
+   "pairs": [
+    "inter",
+    "literata"
+   ]
+  },
+  "kalam": {
+   "note": "Lockere Handschrift mit Filzstift-Charakter."
+  },
+  "just another hand": {
+   "note": "Schmale, schnelle Handschrift."
+  },
+  "permanent marker": {
+   "note": "Dicker Marker, laut. Sparsam einsetzen."
+  },
+  "iosevka": {
+   "note": "Sehr schmale Mono, riesige Dateien (je ca. 40 MB)."
+  },
+  "ibm plex mono": {
+   "note": "Sachliche Mono, passt zu Plex Sans und Serif."
+  },
+  "sf mono": {
+   "note": "Apples Mono, nur für Apple-Plattformen lizenziert."
+  },
+  "altair": {
+   "note": "Trial-Version mit Wasserzeichen in den Ziffern. Nicht verwenden."
+  },
+  "zilla slab": {
+   "pairs": [
+    "inter",
+    "work sans"
+   ]
   }
  }
 }

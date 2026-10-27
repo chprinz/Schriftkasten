@@ -24,6 +24,9 @@ from pathlib import Path
 
 try:
     from fontTools.ttLib import TTFont, TTCollection
+    from fontTools.pens.boundsPen import BoundsPen
+    from fontTools.pens.areaPen import AreaPen
+    from fontTools.pens.recordingPen import DecomposingRecordingPen, RecordingPen
 except ImportError:
     sys.exit("fontTools fehlt. Bitte ./schriftkasten starten (richtet alles ein) oder: pip3 install fonttools brotli")
 
@@ -33,7 +36,7 @@ HERE = Path(__file__).resolve().parent
 DATA = Path(os.environ["SK_DATA"]) if os.environ.get("SK_DATA") else HERE / "data"
 STATIC = HERE / "data"
 HOME = Path.home()
-CACHE_VERSION = 3
+CACHE_VERSION = 4
 FONT_EXT = {".ttf", ".otf", ".ttc", ".otc", ".woff", ".woff2", ".dfont"}
 ADOBE_BASE = HOME / "Library/Application Support/Adobe/CoreSync/plugins/livetype"
 
@@ -157,6 +160,90 @@ def classify(font, family, style, panose_family, panose_serif, fixed):
     return ""
 
 
+def _contours(gs, name):
+    rp = DecomposingRecordingPen(gs)
+    gs[name].draw(rp)
+    out, cur = [], []
+    for op, args in rp.value:
+        cur.append((op, args))
+        if op in ("closePath", "endPath"):
+            out.append(cur)
+            cur = []
+    res = []
+    for c in out:
+        r = RecordingPen()
+        r.value = c
+        bp = BoundsPen(None)
+        r.replay(bp)
+        ap = AreaPen(None)
+        try:
+            r.replay(ap)
+            area = abs(ap.value)
+        except Exception:
+            area = 0
+        if bp.bounds:
+            res.append((bp.bounds, area))
+    return res
+
+
+def shape_metrics(font, cmap, upm, axes):
+    """Grobe Formwerte für 'ähnliche Schriften' und Paarungen. Alles relativ zur Schriftgröße."""
+    try:
+        loc = None
+        if axes:
+            loc = {}
+            for a in axes:
+                if a["tag"] == "wght":
+                    loc["wght"] = min(max(400, a["min"]), a["max"])
+                elif a["tag"] in ("wdth", "opsz"):
+                    loc[a["tag"]] = a["def"] if a["tag"] == "wdth" else min(max(14, a["min"]), a["max"])
+                else:
+                    loc[a["tag"]] = a["def"]
+        gs = font.getGlyphSet(location=loc) if loc else font.getGlyphSet()
+        g = lambda ch: cmap.get(ord(ch))
+        m = {}
+        # x-Höhe gemessen
+        if g("x"):
+            c = _contours(gs, g("x"))
+            if c:
+                xh = max(b[3] for b, _ in c)
+                m["xh"] = round(xh / upm, 3)
+        else:
+            return None
+        xh_u = m["xh"] * upm
+        # o: Strichstärken, Kontrast, Rundung
+        if g("o"):
+            cs = sorted(_contours(gs, g("o")), key=lambda t: (t[0][2] - t[0][0]) * (t[0][3] - t[0][1]), reverse=True)
+            if len(cs) >= 2:
+                (ox0, oy0, ox1, oy1), _ = cs[0]
+                (ix0, iy0, ix1, iy1), _ = cs[1]
+                stem_v = ((ix0 - ox0) + (ox1 - ix1)) / 2
+                stem_h = ((iy0 - oy0) + (oy1 - iy1)) / 2
+                if stem_v > 0 and stem_h > 0:
+                    m["stem"] = round(stem_v / xh_u, 3)          # Fette
+                    m["contrast"] = round(stem_v / stem_h, 2)     # 1 = gleichmäßig
+                    m["round"] = round((ox1 - ox0) / max(oy1 - oy0, 1), 2)  # o-Proportion
+        # Breite: mittlere Dickte einiger Kleinbuchstaben
+        hm = font["hmtx"].metrics if "hmtx" in font else {}
+        ws = [gs[g(ch)].width for ch in "nohesa" if g(ch) and g(ch) in gs]
+        if ws:
+            m["width"] = round(sum(ws) / len(ws) / xh_u, 3)
+        # Serifen: Breite von I bzw. l im Verhältnis zur Strichstärke
+        if m.get("stem"):
+            ratios = []
+            for ch in "Il":
+                if g(ch):
+                    cs = _contours(gs, g(ch))
+                    if cs:
+                        x0 = min(b[0] for b, _ in cs); x1 = max(b[2] for b, _ in cs)
+                        ratios.append((x1 - x0) / (m["stem"] * xh_u))
+            if ratios:
+                m["serif"] = round(min(ratios), 2)
+        return m
+    except Exception:
+        return None
+
+
 def analyse_face(font, path, index, src, adobe_meta):
     family = name_of(font, 16, 1)
     style = name_of(font, 17, 2) or "Regular"
@@ -249,6 +336,9 @@ def analyse_face(font, path, index, src, adobe_meta):
         "trial": trial,
         "licType": "OFL" if OFL_RE.search(lic + " " + lic_url) else "Apache" if APACHE_RE.search(lic) else "UFL" if UFL_RE.search(lic) else "",
         "guess": classify(font, family, style, pan_fam, pan_serif, fixed),
+        "shape": shape_metrics(font, cmap, upm, axes) if not italic else None,
+        "apple": bool(re.search(r"\bapple\b", copyright_ + " " + name_of(font, 8), re.I)) or vendor.upper() == "APPL",
+        "microsoft": bool(re.search(r"microsoft", copyright_ + " " + name_of(font, 8) + " " + lic, re.I)) or vendor.upper() == "MS",
     }
     if src["id"] == "adobe":
         face["licType"] = "Adobe Fonts"
@@ -356,12 +446,96 @@ def clean_family(name):
     return stripped or n
 
 
+KNOWN_MAC = {
+    "american typewriter", "andale mono", "arial", "arial black", "arial narrow", "arial rounded mt bold", "athelas",
+    "avenir", "avenir next", "avenir next condensed", "baskerville", "big caslon", "bodoni 72", "bodoni 72 oldstyle",
+    "bodoni 72 smallcaps", "bradley hand", "brush script mt", "chalkboard", "chalkboard se", "chalkduster", "charter",
+    "cochin", "comic sans ms", "copperplate", "courier", "courier new", "didot", "din alternate", "din condensed",
+    "futura", "geneva", "georgia", "gill sans", "helvetica", "helvetica neue", "herculanum", "hoefler text", "impact",
+    "iowan old style", "lucida grande", "luminari", "marker felt", "menlo", "monaco", "new york", "noteworthy",
+    "optima", "palatino", "papyrus", "phosphate", "pt mono", "pt sans", "pt sans caption", "pt sans narrow", "pt serif",
+    "pt serif caption", "rockwell", "savoye let", "seravek", "sf compact", "sf mono", "sf pro", "sf pro display",
+    "sf pro text", "sf pro rounded", "skia", "snell roundhand", "superclarendon", "tahoma", "times", "times new roman",
+    "trattatello", "trebuchet ms", "verdana", "zapfino", "avenir next lt pro", "charter roman", "americantypewriter",
+}
+KNOWN_MS = {"calibri", "cambria", "candara", "consolas", "constantia", "corbel", "segoe ui", "aptos", "franklin gothic",
+            "gill sans mt", "century gothic", "garamond", "book antiqua", "bookman old style", "tw cen mt"}
+COMMERCIAL_RE = re.compile(r"(end user licen|\beula\b|license agreement|fontfont|fontshop|paratype|klim type|"
+                           r"monotype|linotype|hoefler|commercial type|grilli type|dinamo|typotheque|font bureau|"
+                           r"lineto|production type|sharp type|pangram|fontwerk|typejockeys)", re.I)
+OPEN_RE = re.compile(r"(open font license|openfontlicense|scripts\.sil\.org|apache license|ubuntu font licen|gust font licen|"
+                     r"gnu general public|\bgpl\b|creative commons|cc0|public domain|mit license|bitstream vera)", re.I)
+
+
+def system_families():
+    """Namen der Schriften, die macOS selbst mitbringt (nur auf dem Mac, mit Zwischenspeicher)."""
+    dirs = ["/System/Library/Fonts", "/System/Library/Fonts/Supplemental", "/Library/Apple/System/Library/Fonts"]
+    dirs = [d for d in dirs if os.path.isdir(d)]
+    if not dirs:
+        return set(KNOWN_MAC)
+    sig = ";".join(f"{d}:{int(os.stat(d).st_mtime)}" for d in dirs)
+    cache = DATA / "system-families.json"
+    try:
+        c = json.loads(cache.read_text("utf-8"))
+        if c.get("sig") == sig:
+            return set(c["names"]) | KNOWN_MAC
+    except Exception:
+        pass
+    names = set()
+    for d in dirs:
+        for fn in os.listdir(d):
+            p = os.path.join(d, fn)
+            if not os.path.isfile(p) or os.path.splitext(fn)[1].lower() not in {".ttf", ".otf", ".ttc", ".otc", ".dfont"}:
+                continue
+            try:
+                if fn.lower().endswith((".ttc", ".otc")):
+                    fonts = TTCollection(p, lazy=True).fonts
+                else:
+                    fonts = [TTFont(p, lazy=True)]
+                for f in fonts:
+                    n = name_of(f, 16, 1)
+                    if n and not n.startswith("."):
+                        names.add(n.lower())
+            except Exception:
+                pass
+    try:
+        cache.write_text(json.dumps({"sig": sig, "names": sorted(names)}), "utf-8")
+    except Exception:
+        pass
+    return names | KNOWN_MAC
+
+
+ORIGINS = ["adobe", "macos", "microsoft", "google", "opensource", "trial", "commercial", "unknown"]
+
+
+def origin_of(key, name, fs, gfm, sysnames):
+    lic = " ".join(f["license"] + " " + f["licenseUrl"] + " " + f["copyright"] for f in fs)
+    if any(f["src"] == "adobe" for f in fs):
+        return "adobe"
+    if key in sysnames or name.lower() in sysnames or any(f["src"] == "system" for f in fs):
+        return "macos"
+    if any(f.get("apple") for f in fs) and not OPEN_RE.search(lic):
+        return "macos"
+    if key in KNOWN_MS or any(f.get("microsoft") for f in fs):
+        return "microsoft"
+    if gfm:
+        return "google"
+    if any(f["trial"] for f in fs):
+        return "trial"
+    if OPEN_RE.search(lic) or any(f["licType"] in ("OFL", "Apache", "UFL") for f in fs):
+        return "opensource"
+    if COMMERCIAL_RE.search(lic + " " + " ".join(f["foundry"] for f in fs)):
+        return "commercial"
+    return "unknown"
+
+
 def norm_family(name):
     n = clean_family(name).lower().replace("-", " ")
     return re.sub(r"\s+", " ", n).strip()
 
 
-def build_families(faces, gf):
+def build_families(faces, gf, sysnames=frozenset(), curated=None):
+    curated = curated or {}
     fams = {}
     for f in faces:
         if f["family"].lower() in gf:
@@ -446,10 +620,18 @@ def build_families(faces, gf):
             return (f["italic"], abs(f["weight"] - 400), 0 if f["installed"] else 1, f["fmt"] != "otf")
         rep = sorted(fs, key=rank)[0]
         faces_sorted = sorted(fs, key=lambda f: (f["width"], f["italic"], f["weight"], f["style"]))
+        cur_cat = (curated.get(key) or {}).get("cat")
+        reg = [f for f in fs if f.get("shape") and not f["italic"]]
+        reg.sort(key=lambda f: (abs(f["weight"] - 400), 0 if f["installed"] else 1))
+        shape = reg[0]["shape"] if reg else None
         out.append({
             "key": key,
             "name": name,
             "cat": cat,
+            "ccat": cur_cat or cat,
+            "origin": origin_of(key, name, fs, gfm, sysnames),
+            "shape": shape,
+            "ps": sorted({f["ps"] for f in fs if f["installed"] and f["ps"]}),
             "tier": tier,
             "score": score,
             "faceIds": [f["id"] for f in faces_sorted],
@@ -483,6 +665,99 @@ def build_families(faces, gf):
         })
     out.sort(key=lambda f: f["name"].lower())
     return out
+
+
+FEATS = [("xh", 1.0, False), ("stem", 0.9, False), ("contrast", 1.5, True), ("round", 0.8, False),
+         ("width", 1.2, False), ("serif", 1.4, True)]
+
+
+def _group(cat):
+    return {"serif": "serif", "slab": "serif", "sans": "sans", "mono": "mono"}.get(cat, cat or "?")
+
+
+def relate_families(families, curated, favored=frozenset()):
+    """Ähnliche Familien (Formabstand) und Paarungen (Serif zu Grotesk mit passender x-Höhe)."""
+    import math
+    vecs = {}
+    for f in families:
+        sh = f.get("shape") or {}
+        if all(k in sh for k, _, _ in FEATS):
+            v = []
+            for k, _, lg in FEATS:
+                x = sh[k]
+                if k == "serif":
+                    x = min(max(x, 0.8), 4.5)
+                v.append(math.log(max(x, 0.01)) if lg else x)
+            vecs[f["key"]] = v
+    if not vecs:
+        return
+    n = len(FEATS)
+    mean = [sum(v[i] for v in vecs.values()) / len(vecs) for i in range(n)]
+    sd = [max((sum((v[i] - mean[i]) ** 2 for v in vecs.values()) / len(vecs)) ** 0.5, 1e-6) for i in range(n)]
+    z = {k: [(v[i] - mean[i]) / sd[i] for i in range(n)] for k, v in vecs.items()}
+    by = {f["key"]: f for f in families}
+
+    def dist(a, b):
+        return sum(FEATS[i][1] * (z[a][i] - z[b][i]) ** 2 for i in range(n)) ** 0.5
+
+    for f in families:
+        k = f["key"]
+        cur = curated.get(k) or {}
+        f["similar"], f["pairs"] = [], []
+        if k not in z:
+            f["pairs"] = [p for p in cur.get("pairs", []) if p in by][:4]
+            continue
+        g = _group(f["ccat"])
+        cands = []
+        for o in z:
+            if o == k:
+                continue
+            of = by[o]
+            d = dist(k, o)
+            if _group(of["ccat"]) != g:
+                d += 1.6
+            if of["tier"] == "eingeschraenkt":
+                d += 0.8
+            # gleiche Superfamilie (z. B. Barlow / Barlow Condensed) nicht als 'ähnlich' zeigen
+            if o.split(" ")[0] == k.split(" ")[0]:
+                d += 0.6
+            cands.append((d, o))
+        cands.sort()
+        f["similar"] = [o for _, o in cands[:6]]
+
+        # Paarungen
+        pairs = [p for p in cur.get("pairs", []) if p in by]
+        if g in ("serif", "sans") or f["ccat"] in ("display", "handwriting"):
+            want = {"serif": "sans", "sans": "serif"}.get(g, "text")
+            sh = f["shape"]
+            pc = []
+            for o in z:
+                of = by[o]
+                if o == k or of["tier"] not in ("solide", "brauchbar") or o.split(" ")[0] == k.split(" ")[0]:
+                    continue
+                og = _group(of["ccat"])
+                if want == "text":
+                    if og not in ("sans", "serif") or of["tier"] != "solide":
+                        continue
+                elif og != want:
+                    continue
+                osh = of["shape"]
+                score = 3.0 * abs(sh["xh"] - osh["xh"]) / 0.05
+                score += 1.0 * abs(math.log(sh["stem"] / osh["stem"])) / 0.25 if want != "text" else 0
+                score += 0.5 * abs(sh["width"] - osh["width"]) / 0.1
+                score -= 0.6 if of["tier"] == "solide" else 0
+                score -= 0.4 if of["italic"] else 0
+                score -= 1.5 if o in favored else 0
+                score += 2.5 if of["origin"] in ("microsoft", "unknown", "trial") else 0
+                score += 1.5 if of["ccat"] == "slab" else 0
+                pc.append((score, o))
+            pc.sort()
+            for _, o in pc:
+                if len(pairs) >= 4:
+                    break
+                if o not in pairs:
+                    pairs.append(o)
+        f["pairs"] = pairs[:4]
 
 
 def main():
@@ -522,7 +797,17 @@ def main():
     print("Schriftkasten liest Schriften ein …")
     t0 = time.time()
     faces, problems, srcinfo, new_cache = scan(sources, cache)
-    families = build_families(faces, gf)
+    curated, favored = {}, set()
+    try:
+        cj = json.loads((HERE / "curated.json").read_text("utf-8"))
+        curated = cj.get("families", {})
+        for p in cj.get("profiles", []):
+            if p.get("id") in ("grotesk-charakter", "grotesk-neutral", "serif-text"):
+                favored.update(p.get("items", []))
+    except Exception:
+        pass
+    families = build_families(faces, gf, system_families(), curated)
+    relate_families(families, curated, favored)
 
     # Dateien mit identischem Inhalt an mehreren Orten
     by_hash = {}

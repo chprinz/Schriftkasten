@@ -11,6 +11,7 @@ if [ ! -x .venv/bin/python ]; then
   "$PY" -m venv .venv
   .venv/bin/pip install -q --upgrade pip
   .venv/bin/pip install -q fonttools brotli
+  [ "$(uname)" = "Darwin" ] && .venv/bin/pip install -q pyobjc-framework-Cocoa || true
 fi
 case "$1" in
   scan) exec .venv/bin/python scan.py ;;

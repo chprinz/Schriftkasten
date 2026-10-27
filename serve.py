@@ -35,7 +35,7 @@ FONT_TYPES = {
     "ttc": "font/ttf", "otc": "font/otf", "dfont": "application/octet-stream",
 }
 
-APP_VERSION = "1.2"
+APP_VERSION = "1.3"
 _lock = threading.Lock()
 _last_seen = [time.time()]
 IDLE_HOURS = float(os.environ.get("SK_IDLE_HOURS", "8"))
@@ -238,11 +238,27 @@ class Handler(BaseHTTPRequestHandler):
             if sys.platform == "darwin":
                 subprocess.run(["open", "-R", str(p)])
             return self._send(200, {"ok": True, "path": str(p)})
+        if path == "/api/fontbook":
+            return self._fontbook(body)
         if path == "/api/install":
             return self._install(body.get("faceIds", []))
         if path == "/api/archive":
             return self._archive(body.get("faceIds", []))
         return self._send(404, {"error": "unbekannt"})
+
+    def _fontbook(self, body):
+        if sys.platform != "darwin":
+            return self._send(400, {"error": "Geht nur auf dem Mac"})
+        r = subprocess.run([sys.executable, str(HERE / "fontbook.py")], input=json.dumps(body),
+                           capture_output=True, text=True, timeout=60)
+        try:
+            out = json.loads(r.stdout.strip().splitlines()[-1])
+        except Exception:
+            out = {"ok": False, "error": (r.stderr or r.stdout or "unbekannter Fehler")[-300:]}
+        if not out.get("ok"):
+            return self._send(500, {"error": out.get("error")})
+        out["note"] = "Falls Font Book offen ist: einmal neu starten, dann erscheint die Sammlung."
+        return self._send(200, out)
 
     def _install(self, ids):
         done, skipped = [], []

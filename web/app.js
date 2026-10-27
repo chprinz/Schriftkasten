@@ -36,6 +36,16 @@ const FEAT_NAMES = {
   ss06: "Set 6", ss07: "Set 7", ss08: "Set 8", cv01: "Var. 1", cv02: "Var. 2", cv03: "Var. 3", cv11: "Var. 11",
 };
 const FEAT_DEMO = "Office Affiliate 1/2 3/4 · 0123456789 · Effizienz & Zukunft · Österreich 2026";
+const ORIGINS = {
+  google: ["Google Fonts", "Freie Lizenz (OFL/Apache). Für Kunden, Web und Video ohne Einschränkung."],
+  opensource: ["Open Source", "Freie Lizenz (OFL, GPL, GUST u. a.). In der Regel uneingeschränkt nutzbar."],
+  adobe: ["Adobe Fonts", "Über das Adobe-Abo lizenziert, solange das Abo läuft. Fürs Web nur über Adobe-Webprojekte."],
+  macos: ["macOS", "Kommt mit macOS. Für eigene Dokumente und Videos ok, Weitergabe der Dateien und Web nicht."],
+  microsoft: ["Microsoft", "Kommt mit Office/Windows. Nutzung in Dokumenten ok, Weitergabe nicht."],
+  commercial: ["Kommerziell", "Kauf- oder Foundry-Schrift. Lizenzumfang prüfen (Desktop, Web, Video)."],
+  unknown: ["Aus dem Netz", "Herkunft unklar, meist Free-Font-Seiten. Vor Kundenarbeit die Lizenz prüfen."],
+  trial: ["Trial / Demo", "Nur zum Ausprobieren. Nicht für Kundenarbeit."],
+};
 const SRC_LABEL = { user: "Meine", local: "Alle Benutzer", adobe: "Adobe", fontbase: "FontBase", archiv: "Archiv", system: "System" };
 
 // ---------- Zustand ----------
@@ -152,7 +162,7 @@ function sampleText(f) {
 
 function matchesQ(f, q) {
   if (!q) return true;
-  const hay = [f.name, f.designer, f.foundry, CATS[catOf(f)], ...tagsOf(f), ud(f.key).note, ...colsOf(f.key).map((c) => c.name), ...f.srcs.map((s) => SRC_LABEL[s])].join(" ").toLowerCase();
+  const hay = [f.name, f.designer, f.foundry, CATS[catOf(f)], ...tagsOf(f), ud(f.key).note, CUR.families[f.key]?.note, ORIGINS[f.origin]?.[0], ...colsOf(f.key).map((c) => c.name), ...f.srcs.map((s) => SRC_LABEL[s])].join(" ").toLowerCase();
   return q.toLowerCase().split(/\s+/).every((t) => hay.includes(t));
 }
 
@@ -171,6 +181,8 @@ function inView(f, v) {
   if (v === "library") return f.installed === 0;
   if (v === "adobe") return f.srcs.includes("adobe");
   if (v === "google") return f.google;
+  if (v.startsWith("origin:")) return f.origin === v.slice(7);
+  if (v.startsWith("find:")) { const p = (CUR.profiles || []).find((p) => p.id === v.slice(5)); return p ? p.items.includes(f.key) : false; }
   if (v === "rated") return (ud(f.key).rating || 0) > 0;
   if (v === "noted") return !!ud(f.key).note || (ud(f.key).tags || []).length > 0;
   if (v === "new") return Date.now() / 1000 - f.added < 86400 * 120;
@@ -192,6 +204,10 @@ function compute() {
     rating: (a, b) => (ud(b.key).rating || 0) - (ud(a.key).rating || 0) || b.score - a.score,
     xh: (a, b) => (b.xh || 0) - (a.xh || 0),
   }[S.sort];
+  if (S.view.startsWith("find:") && S.sort === "name") {
+    const p = (CUR.profiles || []).find((p) => p.id === S.view.slice(5));
+    if (p) { arr.sort((a, b) => p.items.indexOf(a.key) - p.items.indexOf(b.key)); return arr; }
+  }
   if (S.view.startsWith("col:") && S.sort === "name") {
     const c = UD.collections.find((c) => c.id === S.view.slice(4));
     if (c) { arr.sort((a, b) => c.items.indexOf(a.key) - c.items.indexOf(b.key)); return arr; }
@@ -200,6 +216,8 @@ function compute() {
 }
 
 // ---------- Navigation ----------
+const ORIGIN_DOT = { google: "#3f6b3a", opensource: "#6d9a5f", adobe: "#c4321f", macos: "#847e73", microsoft: "#847e73", commercial: "#b07a12", unknown: "#cbc5b9", trial: "#9b2f22" };
+let NAVCLOSED = LS.get("navclosed", { stufe: true });
 function count(v) { return FAMS.filter((f) => inView(f, v)).length; }
 function renderNav() {
   const item = (v, label, opts = {}) => {
@@ -209,19 +227,21 @@ function renderNav() {
   };
   const tagsAll = [...new Set(FAMS.flatMap(tagsOf))].sort((a, b) => a.localeCompare(b, "de"));
   const dupN = FAMS.filter((f) => f.dups.length).length;
+  const grp = (id, label, body, extra = "") => {
+    const closed = NAVCLOSED[id];
+    return `<div class="nav-h nav-t${closed ? " closed" : ""}" data-g="${id}"><span>${label}</span>${extra}</div><div class="nav-g${closed ? " closed" : ""}">${body}</div>`;
+  };
   const html = `
-    <div class="nav-h">Bestand</div>
-    ${item("all", "Alle Familien")}
-    ${item("installed", "Installiert")}
-    ${item("library", "Nicht aktiv", { hideEmpty: true, title: "Liegt in FontBase oder im Archiv, ist aber nicht installiert" })}
-    ${item("adobe", "Adobe Fonts", { n: count("adobe") })}
-    ${item("google", "Google Fonts", { title: "Familien, die es bei Google Fonts gibt" })}
-    ${item("new", "Neu (120 Tage)", { hideEmpty: true })}
-    ${item("rated", "Bewertet", { hideEmpty: false })}
-    <div class="nav-h">Einstufung</div>
-    ${Object.entries(TIERS).map(([k, [l, t]]) => item("tier:" + k, l, { title: t })).join("")}
-    <div class="nav-h">Art</div>
-    ${Object.entries(CATS).map(([k, l]) => item("cat:" + k, l, { hideEmpty: true })).join("")}
+    ${grp("bestand", "Bestand", `
+      ${item("all", "Alle Familien")}
+      ${item("installed", "Installiert")}
+      ${item("library", "Nicht aktiv", { hideEmpty: true, title: "Liegt in FontBase oder im Archiv, ist aber nicht installiert" })}
+      ${item("new", "Neu (120 Tage)", { hideEmpty: true })}
+      ${item("rated", "Bewertet")}`)}
+    ${(CUR.profiles || []).length ? grp("find", "Ich suche …", (CUR.profiles || []).map((p) => item("find:" + p.id, p.name, { title: p.desc })).join("")) : ""}
+    ${grp("herkunft", "Herkunft & Lizenz", Object.entries(ORIGINS).map(([k, [l, t]]) => item("origin:" + k, l, { title: t, hideEmpty: k !== "adobe", dot: ORIGIN_DOT[k] })).join(""))}
+    ${grp("art", "Art", Object.entries(CATS).map(([k, l]) => item("cat:" + k, l, { hideEmpty: true })).join(""))}
+    ${grp("stufe", "Einstufung", Object.entries(TIERS).map(([k, [l, t]]) => item("tier:" + k, l, { title: t })).join(""))}
     <div class="nav-h">Sammlungen <button id="newCol" title="Neue Sammlung">+</button></div>
     ${UD.collections.map((c) => item("col:" + c.id, c.name, { n: c.items.filter((k) => BYKEY[k]).length })).join("") || `<div class="nav-i" style="color:var(--muted)">Noch keine</div>`}
     ${tagsAll.length ? `<div class="nav-h">Tags</div>${tagsAll.map((t) => item("tag:" + t, "#" + t)).join("")}` : ""}
@@ -231,6 +251,11 @@ function renderNav() {
     <button class="nav-i" id="quitBtn" title="Beendet den Hintergrunddienst. Startet wieder über das App-Symbol.">Beenden</button>
   `;
   $("#nav").innerHTML = html;
+  $$("#nav .nav-t").forEach((hd) => hd.onclick = (e) => {
+    if (e.target.closest("button")) return;
+    NAVCLOSED[hd.dataset.g] = !NAVCLOSED[hd.dataset.g]; LS.set("navclosed", NAVCLOSED);
+    hd.classList.toggle("closed"); hd.nextElementSibling.classList.toggle("closed");
+  });
   $$("#nav .nav-i[data-v]").forEach((b) => {
     b.onclick = () => setView(b.dataset.v);
     if (b.dataset.v.startsWith("col:")) {
@@ -279,11 +304,16 @@ function renderHead(n) {
   let title = "Alle Familien", sub = "", tools = "";
   if (v === "installed") { title = "Installiert"; sub = "Alles, was macOS gerade aktiv hat: ~/Library/Fonts, /Library/Fonts und aktivierte Adobe Fonts."; }
   else if (v === "library") { title = "Nicht aktiv"; sub = "Liegt in FontBase oder im Archiv. Mit „Installieren“ landet eine Kopie in ~/Library/Fonts."; }
-  else if (v === "adobe") {
+  else if (v === "origin:adobe") {
     title = "Adobe Fonts";
     const n = count("adobe");
     sub = n ? "Aktivierte Adobe Fonts aus Creative Cloud. Neu aktivierte Schriften erscheinen nach „Neu einlesen“." : "Keine aktivierten Adobe Fonts gefunden. Creative Cloud aktiviert sie lokal, danach hier „Neu einlesen“.";
-    tools = `<a class="btn" href="https://fonts.adobe.com/my_fonts#active_fonts" target="_blank" rel="noopener">Meine Adobe Fonts</a><a class="btn" href="https://fonts.adobe.com/fonts" target="_blank" rel="noopener">Adobe Fonts durchsuchen</a><button class="btn primary" data-act="rescan">Neu einlesen</button>`;
+    tools = `<a class="btn" href="https://fonts.adobe.com/my_fonts#active_fonts" target="_blank" rel="noopener">Meine Adobe Fonts</a><a class="btn" href="https://fonts.adobe.com/fonts" target="_blank" rel="noopener">Adobe Fonts durchsuchen</a><button class="btn" data-act="rescan">Neu einlesen</button>`;
+  }
+  else if (v.startsWith("origin:")) { [title, sub] = ORIGINS[v.slice(7)] || ["", ""]; }
+  else if (v.startsWith("find:")) {
+    const p = (CUR.profiles || []).find((p) => p.id === v.slice(5));
+    if (p) { title = p.name; sub = p.desc + " Sortierung nach Name zeigt die kuratierte Reihenfolge."; tools = `<button class="btn" data-act="toCol">Als Sammlung übernehmen</button>`; }
   }
   else if (v === "google") { title = "Google Fonts"; sub = "Familien, die auch bei Google Fonts liegen. Freie Lizenz (meist OFL), fürs Web direkt einbindbar."; }
   else if (v === "rated") title = "Bewertet";
@@ -296,13 +326,14 @@ function renderHead(n) {
     if (c) {
       $("#head").innerHTML = `<div style="flex:1;min-width:280px"><h1><input class="head-edit" id="colName" value="${esc(c.name)}"></h1>
         <input class="head-edit sub" id="colDesc" placeholder="Beschreibung, wofür diese Sammlung gedacht ist …" value="${esc(c.desc || "")}"></div>
-        <div class="tools"><span class="tag">${n} Familien</span><button class="btn" data-act="copyNames">Namen kopieren</button><button class="btn" data-act="compareCol">Alle vergleichen</button><button class="btn warn" data-act="delCol">Löschen</button></div>`;
+        <div class="tools"><span class="tag">${n} Familien</span><button class="btn" data-act="copyNames">Namen kopieren</button><button class="btn" data-act="compareCol">Alle vergleichen</button><button class="btn" data-act="fontbook" title="Legt diese Sammlung in der Mac-Schriftsammlung (Font Book) an oder aktualisiert sie">An Schriftsammlung</button><button class="btn warn" data-act="delCol">Löschen</button></div>`;
       $("#colName").onchange = (e) => { c.name = e.target.value.trim() || c.name; saveUD(); renderNav(); };
       $("#colDesc").onchange = (e) => { c.desc = e.target.value.trim(); saveUD(); };
       wireHeadActs(c);
       return;
     }
   }
+  if (v.startsWith("origin:") || v.startsWith("find:") || v.startsWith("tag:")) tools += `<button class="btn" data-act="fontbook" title="Legt diese Liste in der Mac-Schriftsammlung (Font Book) an oder aktualisiert sie">An Schriftsammlung</button>`;
   $("#head").innerHTML = `<div><h1>${esc(title)}</h1>${sub ? `<div class="sub">${esc(sub)}</div>` : ""}</div><div class="tools"><span class="tag">${n} Familien</span>${tools}</div>`;
   wireHeadActs();
 }
@@ -312,6 +343,12 @@ function wireHeadActs(c) {
     if (a === "rescan") return rescan(b);
     if (a === "copyNames") { await navigator.clipboard.writeText(visible.map((f) => f.name).join("\n")); toast("Namen kopiert"); }
     if (a === "compareCol") { S.compare = visible.slice(0, 8).map((f) => f.key); LS.set("compare", S.compare); renderTray(); openCompare(); }
+    if (a === "fontbook") return toFontBook(c ? c.name : $("#head h1").textContent, b);
+    if (a === "toCol") {
+      const p = (CUR.profiles || []).find((p) => p.id === S.view.slice(5));
+      const nc = { id: uid(), name: p.name, desc: p.desc, items: visible.map((f) => f.key) };
+      UD.collections.push(nc); saveUD(); setView("col:" + nc.id); toast(`Sammlung „${nc.name}“ angelegt`); return;
+    }
     if (a === "delCol" && c) { if (!confirm(`Sammlung „${c.name}“ löschen? Die Schriften bleiben unberührt.`)) return; UD.collections = UD.collections.filter((x) => x !== c); saveUD(); setView("all"); }
   });
 }
@@ -356,8 +393,8 @@ function metaTags(f) {
   if (!f.de) t.push(`<span class="tag warn" title="ä ö ü ß fehlen in mindestens einem Schnitt">ohne Umlaute</span>`);
   if (f.trial) t.push(`<span class="tag warn">Trial/Demo</span>`);
   if (f.dups.length) t.push(`<span class="tag warn" title="Gleiche Schnitte liegen mehrfach installiert">doppelt</span>`);
-  if (f.srcs.includes("adobe")) t.push(`<span class="tag src-adobe">Adobe</span>`);
-  else if (f.google) t.push(`<span class="tag">Google</span>`);
+  const O = ORIGINS[f.origin];
+  if (O && f.origin !== "trial") t.push(`<span class="tag o-${f.origin}" title="${esc(O[1])}">${esc(O[0])}</span>`);
   t.push(f.installed ? `<span class="tag inst" title="installiert">✓ aktiv</span>` : `<span class="tag notinst" title="nicht installiert">nicht aktiv</span>`);
   tagsOf(f).forEach((x) => t.push(`<span class="tag user">#${esc(x)}</span>`));
   return t.join("");
@@ -528,6 +565,28 @@ function axesString(face) {
   const parts = face.axes.filter((a) => a.tag in S.dAxes || a.tag === "wght").map((a) => `"${a.tag}" ${S.dAxes[a.tag] ?? axisStart(a)}`);
   return parts.length ? parts.join(", ") : "";
 }
+function relatedHtml(f) {
+  const pairs = (f.pairs || []).filter((k) => BYKEY[k]);
+  const sim = (f.similar || []).filter((k) => BYKEY[k]);
+  if (!pairs.length && !sim.length) return "";
+  const own = CUR.families[f.key]?.pairs || [];
+  const isText = ["serif", "slab"].includes(catOf(f));
+  const pairCard = (k) => {
+    const o = BYKEY[k];
+    // Titel in der Schrift mit mehr Ausdruck, Text in der ruhigeren
+    const fTitle = ["display", "handwriting"].includes(catOf(f)) || isText ? f : o;
+    const fText = fTitle === f ? o : f;
+    const tb = pickFace(fTitle, ["display", "handwriting"].includes(catOf(fTitle)) ? "auto" : 600);
+    const tr = pickFace(fText, 400);
+    return `<button class="pair" data-rel="${esc(k)}" title="${esc(o.name)} öffnen">
+      <span class="pair-t" data-face="${tb.id}" data-vs="${esc(tb.vs || "")}">${esc(S.custom || "Ein Sommer am Fluss")}</span>
+      <span class="pair-p" data-face="${tr.id}" data-vs="${esc(tr.vs || "")}">Am Abend wird es im Tal still. Über dem Fluss liegt noch etwas Licht, die Straße ist leer.</span>
+      <span class="pair-n">${esc(fTitle.name)} + ${esc(fText.name)}${own.includes(k) ? " · kuratiert" : ""}${o.installed ? "" : " · nicht aktiv"}</span>
+    </button>`;
+  };
+  return `${pairs.length ? `<div class="sec"><div class="sec-h">Passt dazu</div><div class="pairs">${pairs.slice(0, 3).map(pairCard).join("")}</div></div>` : ""}
+    ${sim.length ? `<div class="sec"><div class="sec-h">Ähnlich in deinem Bestand</div><div class="sims">${sim.map((k) => { const o = BYKEY[k]; return `<button class="sim" data-rel="${esc(k)}"><span class="sim-s" data-face="${o.rep}">${esc(o.name)}</span><span class="sim-m">${esc(CATS[catOf(o)] || "")} · ${o.nStyles} Schn.${o.installed ? "" : " · nicht aktiv"}</span></button>`; }).join("")}</div></div>` : ""}`;
+}
 function renderDrawer() {
   const f = BYKEY[S.open]; if (!f) return closeDrawer();
   const faces = f.faceIds.map((id) => FACES[id]);
@@ -573,6 +632,8 @@ function renderDrawer() {
       ${fontsUrl(f)}
     </div>
 
+    ${relatedHtml(f)}
+
     <div class="sec"><div class="sec-h">Schnitte (${faces.length})</div><div class="styles">
       ${faces.map((x) => `<div class="st${x.id === face.id ? " on" : ""}" data-f="${x.id}">
         <div class="st-l">${esc(x.style)}<small>${x.axes.length ? "variabel " + x.axes.map((a) => a.tag).join(" ") : x.weight}${x.italic ? " · kursiv" : ""}</small></div>
@@ -612,6 +673,7 @@ function renderDrawer() {
     <div class="sec"><div class="sec-h">Infos</div>
       <dl class="kv">
         <dt>Version</dt><dd>${esc(face.version || "–")}</dd>
+        <dt>Herkunft</dt><dd>${esc(ORIGINS[f.origin]?.[0] || "unbekannt")} <span style="color:var(--muted)">· ${esc(ORIGINS[f.origin]?.[1] || "")}</span></dd>
         <dt>Lizenz</dt><dd>${esc(f.lic.join(", ") || "unbekannt")}${f.trial ? ` <span class="tag warn">Trial/Demo</span>` : ""}</dd>
         <dt>Stärken</dt><dd>${f.wmin}–${f.wmax}${f.variable ? " (variabel)" : ""}</dd>
         <dt>Zeichen</dt><dd>${Math.max(...faces.map((x) => x.glyphs))} Glyphen${f.xh ? ` · x-Höhe ${Math.round(f.xh * 100)} %` : ""}</dd>
@@ -627,7 +689,7 @@ function renderDrawer() {
   const vs = axesString(face);
   ["#dHero"].forEach((s) => applyFace($(s, el), face.id, vs));
   $$(".dface, #dWater div", el).forEach((x) => applyFace(x, face.id, vs));
-  $$("[data-face]", el).forEach((x) => applyFace(x, x.dataset.face, axesString(FACES[x.dataset.face]) || undefined));
+  $$("[data-face]", el).forEach((x) => applyFace(x, x.dataset.face, "vs" in x.dataset ? x.dataset.vs : (axesString(FACES[x.dataset.face]) || undefined)));
   const bold = pickFace(f, 700), reg = pickFace(f, 400);
   $$(".dface-b", el).forEach((x) => applyFace(x, bold.id, bold.vs));
   $$(".dface-r", el).forEach((x) => applyFace(x, reg.id, reg.vs));
@@ -635,6 +697,7 @@ function renderDrawer() {
   $$(".dface", el).forEach((x) => (x.style.fontFeatureSettings = fs));
 
   // Ereignisse
+  $$("[data-rel]", el).forEach((b) => b.onclick = () => openDrawer(b.dataset.rel));
   $("#dClose").onclick = closeDrawer;
   $$("[data-d]", el).forEach((b) => b.onclick = () => stepDrawer(+b.dataset.d));
   $$(".st", el).forEach((r) => r.onclick = () => { S.dFace = r.dataset.f; S.dAxes = {}; renderDrawer(); });
@@ -688,6 +751,19 @@ async function archiveFaces(ids, label) {
     await reload();
     toast(`${r.archived.length} Datei(en) nach ${r.archiveDir} verschoben` + (r.skipped.length ? `, ${r.skipped.length} übersprungen` : ""));
   } catch (e) { toast(e.message, true); }
+}
+
+async function toFontBook(name, btn) {
+  const c = S.view.startsWith("col:") ? UD.collections.find((x) => x.id === S.view.slice(4)) : null;
+  const list = c ? c.items.map((k) => BYKEY[k]).filter(Boolean) : visible;
+  const ps = [...new Set(list.flatMap((f) => f.ps || []))];
+  if (!ps.length) return toast("Keine installierten Schriften in dieser Liste.", true);
+  if (btn) { btn.disabled = true; btn.textContent = "Übergebe …"; }
+  try {
+    const r = await api("/api/fontbook", { method: "POST", body: { name, ps } });
+    toast(`„${r.name}“ in der Schriftsammlung: ${r.count} Schnitte` + (r.note ? "\n" + r.note : ""));
+  } catch (e) { toast("Übergabe fehlgeschlagen: " + e.message, true); }
+  if (btn) { btn.disabled = false; btn.textContent = "An Schriftsammlung"; }
 }
 
 // ---------- Werkstatt: Aufräumen ----------

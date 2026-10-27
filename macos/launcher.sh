@@ -47,6 +47,13 @@ if [ ! -x "$VENV/bin/python" ] || ! "$VENV/bin/python" -c "import fontTools, bro
   } >> "$LOG" 2>&1 || fail "Die Einrichtung ist fehlgeschlagen. Details stehen im Protokoll."
 fi
 
+# Für die Übergabe an die Schriftsammlung (Font Book). Fehlt es, läuft der Rest trotzdem.
+if ! "$VENV/bin/python" -c "import AppKit" 2>/dev/null; then
+  note "Richte Übergabe an die Schriftsammlung ein …"
+  echo "== PyObjC $(date)" >> "$LOG"
+  "$VENV/bin/pip" install -q pyobjc-framework-Cocoa >> "$LOG" 2>&1 || true
+fi
+
 note "Lese Schriften ein …"
 export SK_DATA="$SUP"
 cd "$APP_RES" || fail "App-Dateien nicht gefunden."

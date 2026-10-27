@@ -52,6 +52,33 @@ Das Einlesen von rund 1.300 Dateien dauert unter zehn Sekunden. Danach werden nu
 - **Sammlungen**: über ◇ an jeder Zeile, per Drag & Drop auf eine Sammlung links, oder in der Detailansicht. Sammlungen haben eine Beschreibung und lassen sich als Namensliste kopieren.
 - **Installieren**: Schriften aus FontBase oder dem Archiv mit einem Klick nach `~/Library/Fonts` kopieren.
 
+## Finden: Suchprofile, Ähnliche, Paarungen
+
+- **Ich suche …** (Seitenleiste): kuratierte Listen für typische Fälle, etwa „Grotesk mit dezentem Charakter“, „Serif für Logo & Wortmarke“ oder „Serif für Fließtext“. Sortiert nach Name zeigt sich die empfohlene Reihenfolge. Mit „Als Sammlung übernehmen“ wird daraus eine eigene, veränderbare Sammlung.
+- **Ähnlich in deinem Bestand** (Detailansicht): sechs Familien mit ähnlicher Form. Grundlage ist eine Messung der Buchstaben: x-Höhe, Strichstärke, Kontrast, Breite, Rundung, Serifen.
+- **Passt dazu** (Detailansicht): Paarungen von Serif und Grotesk mit passender x-Höhe, als kleine Probe aus Titel und Absatz. Handverlesene Paarungen sind mit „kuratiert“ markiert.
+
+## Herkunft & Lizenz
+
+Jede Familie bekommt eine Herkunft, sichtbar als Kennzeichen in der Zeile und als Gruppe in der Seitenleiste:
+
+| Herkunft | Bedeutung |
+|---|---|
+| Google Fonts | freie Lizenz, uneingeschränkt nutzbar |
+| Open Source | freie Lizenz (OFL, GPL, GUST u. a.) |
+| Adobe Fonts | über das Adobe-Abo lizenziert |
+| macOS | kommt mit macOS; Nutzung ok, Weitergabe nicht |
+| Microsoft | kommt mit Office/Windows |
+| Kommerziell | Kauf- oder Foundry-Schrift, Lizenzumfang prüfen |
+| Aus dem Netz | Herkunft unklar, meist Free-Font-Seiten |
+| Trial / Demo | nicht für Kundenarbeit |
+
+Die Zuordnung stützt sich auf die Google-Fonts-Daten, die Liste der macOS-Systemschriften und die Lizenzfelder in den Dateien. Bei „Kommerziell“ und „Aus dem Netz“ ist das eine Einschätzung, keine Rechtsauskunft.
+
+## An die Schriftsammlung übergeben
+
+In jeder Sammlung, jedem Suchprofil und jeder Herkunftsgruppe gibt es „An Schriftsammlung“. Damit legt der Schriftkasten die Liste in der Mac-Schriftsammlung (Font Book) an, mit dem Präfix „SK · “. Ein erneuter Klick ersetzt die Sammlung, statt sie zu verdoppeln. Eigene Sammlungen in Font Book bleiben unberührt. Die Sammlungen erscheinen auch in der Schriftauswahl von Pages, Keynote und TextEdit. Adobe-Programme und DaVinci nutzen sie nicht.
+
 ## Einstufung
 
 Jede Familie bekommt automatisch eine Stufe. Die Punkte (0 bis 100) ergeben sich aus der Zahl der Stärken, Kursiven, vollständigen Umlauten, Abdeckung für osteuropäische Sprachen, OpenType-Funktionen und bekannter Herkunft (Google, Adobe, OFL).
