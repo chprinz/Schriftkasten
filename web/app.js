@@ -65,6 +65,7 @@ const S = {
   sort: LS.get("sort", "name"),
   filters: LS.get("filters", {}),
   compare: LS.get("compare", []),
+  cmpW: LS.get("cmpW", {}),
   limit: 120,
   open: null,
   dFace: null,
@@ -348,7 +349,7 @@ function wireHeadActs(c) {
     const a = b.dataset.act;
     if (a === "rescan") return rescan(b);
     if (a === "copyNames") { await navigator.clipboard.writeText(visible.map((f) => f.name).join("\n")); toast("Namen kopiert"); }
-    if (a === "compareCol") { S.compare = visible.slice(0, 8).map((f) => f.key); LS.set("compare", S.compare); renderTray(); openCompare(); }
+    if (a === "compareCol") { S.compare = visible.map((f) => f.key); LS.set("compare", S.compare); renderTray(); openCompare(); }
     if (a === "fontbook") return toFontBook(c ? c.name : $("#head h1").textContent, b);
     if (a === "toCol") {
       const p = (CUR.profiles || []).find((p) => p.id === S.view.slice(5));
@@ -532,7 +533,7 @@ document.addEventListener("mousedown", (e) => { if (!e.target.closest("#pop") &&
 
 // ---------- Vergleich ----------
 function toggleCompare(key) {
-  S.compare = S.compare.includes(key) ? S.compare.filter((k) => k !== key) : [...S.compare, key].slice(-8);
+  S.compare = S.compare.includes(key) ? S.compare.filter((k) => k !== key) : [...S.compare, key];
   LS.set("compare", S.compare); renderTray();
 }
 function renderTray() {
@@ -545,27 +546,209 @@ function renderTray() {
   $("#cmpGo").onclick = openCompare;
   $("#cmpClr").onclick = () => { const ks = S.compare; S.compare = []; LS.set("compare", []); renderTray(); ks.forEach(refreshRow); };
 }
-let cmpMode = "zeilen";
+let cmpView = LS.get("cmpView", "zeilen"); // zeilen | kacheln | absatz
+let cmpCols = LS.get("cmpCols", 3);
+let cmpSz = 44;
+let cmpText = null; // im Vergleich getippter Text, gilt auch fürs Deck
+const WNAMES = { 100: "Thin", 200: "ExtraLight", 300: "Light", 400: "Regular", 500: "Medium", 600: "SemiBold", 700: "Bold", 800: "ExtraBold", 900: "Black" };
+const cmpFams = () => S.compare.map((k) => BYKEY[k]).filter((f) => f && !f.ghost);
+const cmpTxt = () => cmpText || S.custom || PRESETS[S.preset][1] || "Victor jagt zwölf Boxkämpfer quer über den großen Sylter Deich.";
+
+// Welche Stärken gibt es bei dieser Familie wirklich?
+function weightOptions(f) {
+  const set = new Set(); let ital = false;
+  for (const id of f.faceIds) {
+    const x = FACES[id];
+    if (x.italic) { ital = true; continue; }
+    const ax = x.axes.find((a) => a.tag === "wght");
+    if (ax) { for (let w = 100; w <= 900; w += 100) if (w >= ax.min && w <= ax.max) set.add(w); }
+    else set.add(x.weight);
+    if (x.axes.some((a) => a.tag === "ital" || a.tag === "slnt")) ital = true;
+  }
+  return { ws: [...set].sort((a, b) => a - b), ital };
+}
+function setCmpW(key, v) {
+  if (!v) delete S.cmpW[key]; else S.cmpW[key] = v;
+  LS.set("cmpW", S.cmpW);
+}
+function wselHtml(f) {
+  const cur = String(S.cmpW[f.key] ?? "");
+  const { ws, ital } = weightOptions(f);
+  const opt = (v, t) => `<option value="${v}"${cur === String(v) ? " selected" : ""}>${t}</option>`;
+  return `<select class="wsel" data-k="${esc(f.key)}" title="${cmpView === "absatz" ? "Schnitt der Überschrift" : "Schnitt dieser Schrift"}">${opt("", "Standard")}${ws.map((w) => opt(w, WNAMES[w] ? `${WNAMES[w]} ${w}` : w)).join("")}${ital ? opt("i", "Kursiv") : ""}</select>`;
+}
+function faceLabel(pf) {
+  const m = /"wght" (\d+)/.exec(pf.vs || "");
+  if (m) return `${WNAMES[+m[1]] || ""} ${m[1]}`.trim();
+  if (/"(ital|slnt)"/.test(pf.vs || "")) return "Kursiv";
+  const x = FACES[pf.id];
+  if (!x) return "";
+  return `${WNAMES[x.weight] ? WNAMES[x.weight] + " " : ""}${x.weight}${x.italic ? " Kursiv" : ""}`;
+}
+
 function openCompare() {
   const o = $("#compare");
-  const fams = S.compare.map((k) => BYKEY[k]).filter((f) => f && !f.ghost);
-  const txt = S.custom || PRESETS[S.preset][1] || "Victor jagt zwölf Boxkämpfer quer über den großen Sylter Deich.";
-  o.innerHTML = `<div class="cmp-bar"><b>Vergleich</b><span class="tag">${fams.length} Familien</span>
-      <div class="seg"><button data-m="zeilen" class="${cmpMode === "zeilen" ? "on" : ""}">Zeilen</button><button data-m="absatz" class="${cmpMode === "absatz" ? "on" : ""}">Titel + Absatz</button></div>
-      <div class="ctl"><span class="lbl">Größe</span><input type="range" min="14" max="140" value="${S.size}" id="cmpSize"></div>
-      <div class="spacer"></div><button class="btn" id="cmpClose">Schließen (Esc)</button></div>
-    ${cmpMode === "zeilen"
-      ? `<div class="cmp-grid">${fams.map((f) => { const pf = pickFace(f, S.weight); return `<div class="cmp-row"><div class="fam-top"><button class="fam-name" data-k="${esc(f.key)}">${esc(f.name)}</button><span class="meta">${metaTags(f)}</span></div><div class="spec" contenteditable spellcheck="false" data-face="${pf.id}" data-vs="${esc(pf.vs || "")}" style="font-size:${S.size}px">${esc(txt)}</div></div>`; }).join("")}</div>`
-      : `<div class="cmp-cols">${fams.map((f) => { const pf = pickFace(f, "auto"); const bold = pickFace(f, 700); return `<div class="cmp-col"><small>${esc(f.name)}</small><h3 data-face="${bold.id}" data-vs="${esc(bold.vs || "")}">${esc(S.custom || PARA.h)}</h3><p data-face="${pf.id}">${esc(PARA.p)}</p></div>`; }).join("")}</div>`}`;
-  $$("[data-face]", o).forEach((el) => applyFace(el, el.dataset.face, el.dataset.vs));
-  $$("[data-m]", o).forEach((b) => b.onclick = () => { cmpMode = b.dataset.m; openCompare(); });
-  $("#cmpSize").oninput = (e) => $$(".cmp-row .spec", o).forEach((el) => el.style.fontSize = e.target.value + "px");
+  cmpSz = S.size;
+  o.innerHTML = `<div class="cmp-bar"><b>Vergleich</b><span class="tag" id="cmpCount"></span>
+      <div class="seg" id="cmpViews">${[["zeilen", "Zeilen"], ["kacheln", "Kacheln"], ["absatz", "Titel + Absatz"]].map(([v, t]) => `<button data-m="${v}">${t}</button>`).join("")}</div>
+      <div class="ctl" id="cmpSizeCtl"><span class="lbl">Größe</span><input type="range" min="14" max="140" value="${cmpSz}" id="cmpSize"></div>
+      <div class="ctl" id="cmpColsCtl"><span class="lbl">Spalten</span><div class="seg" id="cmpColsSeg">${[1, 2, 3, 4, 5].map((n) => `<button data-c="${n}">${n}</button>`).join("")}</div></div>
+      <div class="ctl"><span class="lbl">Schnitt für alle</span><select id="cmpAll"><option value="__">wählen …</option><option value="">Standard</option>${[100, 200, 300, 400, 500, 600, 700, 800, 900].map((w) => `<option value="${w}">${WNAMES[w]} ${w}</option>`).join("")}<option value="i">Kursiv</option></select></div>
+      <div class="spacer"></div>
+      <div class="seg" id="cmpCanvas"><button data-v="paper">Hell</button><button data-v="night">Dunkel</button></div>
+      <button class="btn primary" id="cmpDeck" title="Aus diesem Vergleich ein Deck bauen, am Bildschirm zeigen oder als PDF sichern">Als Deck …</button>
+      <button class="btn" id="cmpClose">Schließen (Esc)</button></div>
+    <div id="cmpBody"></div>`;
+  const sync = () => {
+    $$("#cmpViews button", o).forEach((b) => b.classList.toggle("on", b.dataset.m === cmpView));
+    $$("#cmpColsSeg button", o).forEach((b) => b.classList.toggle("on", +b.dataset.c === cmpCols));
+    $$("#cmpCanvas button", o).forEach((b) => b.classList.toggle("on", b.dataset.v === S.canvas));
+    $("#cmpSizeCtl").style.display = cmpView === "absatz" ? "none" : "";
+    $("#cmpColsCtl").style.display = cmpView === "kacheln" ? "" : "none";
+  };
+  $$("#cmpViews button", o).forEach((b) => b.onclick = () => { cmpView = b.dataset.m; LS.set("cmpView", cmpView); sync(); renderCmpBody(); });
+  $$("#cmpColsSeg button", o).forEach((b) => b.onclick = () => { cmpCols = +b.dataset.c; LS.set("cmpCols", cmpCols); sync(); renderCmpBody(); });
+  $$("#cmpCanvas button", o).forEach((b) => b.onclick = () => { S.canvas = b.dataset.v; LS.set("canvas", S.canvas); renderBar(); sync(); });
+  $("#cmpSize").oninput = (e) => { cmpSz = +e.target.value; $$("#cmpBody .spec", o).forEach((el) => el.style.fontSize = cmpSz + "px"); };
+  $("#cmpAll").onchange = (e) => {
+    const v = e.target.value; e.target.value = "__";
+    if (v === "__") return;
+    for (const f of cmpFams()) {
+      if (!v) { setCmpW(f.key, ""); continue; }
+      const { ws, ital } = weightOptions(f);
+      if (v === "i") { if (ital) setCmpW(f.key, "i"); continue; }
+      if (!ws.length) continue;
+      setCmpW(f.key, String(ws.reduce((a, b) => Math.abs(b - v) < Math.abs(a - v) ? b : a)));
+    }
+    renderCmpBody();
+  };
+  $("#cmpDeck").onclick = openDeck;
   $("#cmpClose").onclick = closeCompare;
-  $$(".fam-name", o).forEach((b) => b.onclick = () => { closeCompare(); openDrawer(b.dataset.k); });
-  $$(".cmp-row .spec", o).forEach((el) => el.oninput = () => $$(".cmp-row .spec", o).forEach((x) => { if (x !== el) x.textContent = el.textContent; }));
+  sync();
+  renderCmpBody();
   o.classList.add("on");
 }
-function closeCompare() { $("#compare").classList.remove("on"); }
+
+function renderCmpBody() {
+  const fams = cmpFams();
+  if (!fams.length) return closeCompare();
+  $("#cmpCount").textContent = `${fams.length} ${fams.length === 1 ? "Familie" : "Familien"}`;
+  const txt = cmpTxt();
+  const X = (f) => `<button class="ib cmp-x" data-x="${esc(f.key)}" title="Aus dem Vergleich nehmen">×</button>`;
+  const NAME = (f) => `<button class="fam-name" data-k="${esc(f.key)}">${esc(f.name)}</button>`;
+  let html;
+  if (cmpView === "zeilen") {
+    html = `<div class="cmp-grid">${fams.map((f) => { const pf = pickFace(f, S.cmpW[f.key] ?? S.weight); return `<div class="cmp-row"><div class="fam-top">${NAME(f)}<span class="meta">${metaTags(f)}</span><span class="spacer"></span>${wselHtml(f)}${X(f)}</div><div class="spec" contenteditable spellcheck="false" data-face="${pf.id}" data-vs="${esc(pf.vs || "")}" style="font-size:${cmpSz}px">${esc(txt)}</div></div>`; }).join("")}</div>`;
+  } else if (cmpView === "kacheln") {
+    html = `<div class="cmp-tiles" style="--cols:${cmpCols}">${fams.map((f) => { const pf = pickFace(f, S.cmpW[f.key] ?? S.weight); return `<div class="cmp-tile"><div class="tile-cap">${NAME(f)}<span class="spacer"></span>${wselHtml(f)}${X(f)}</div><div class="spec" contenteditable spellcheck="false" data-face="${pf.id}" data-vs="${esc(pf.vs || "")}" style="font-size:${cmpSz}px">${esc(txt)}</div></div>`; }).join("")}</div>`;
+  } else {
+    html = `<div class="cmp-cols">${fams.map((f) => { const pf = pickFace(f, "auto"); const bold = pickFace(f, S.cmpW[f.key] ?? 700); return `<div class="cmp-col"><div class="tile-cap">${NAME(f)}<span class="spacer"></span>${wselHtml(f)}${X(f)}</div><h3 data-face="${bold.id}" data-vs="${esc(bold.vs || "")}">${esc(S.custom || PARA.h)}</h3><p data-face="${pf.id}">${esc(PARA.p)}</p></div>`; }).join("")}</div>`;
+  }
+  const body = $("#cmpBody");
+  body.innerHTML = html;
+  $$("[data-face]", body).forEach((el) => applyFace(el, el.dataset.face, el.dataset.vs));
+  $$(".wsel", body).forEach((s) => s.onchange = () => { setCmpW(s.dataset.k, s.value); renderCmpBody(); });
+  $$(".cmp-x", body).forEach((b) => b.onclick = () => { const k = b.dataset.x; toggleCompare(k); refreshRow(k); renderCmpBody(); });
+  $$(".fam-name", body).forEach((b) => b.onclick = () => { closeCompare(); openDrawer(b.dataset.k); });
+  const eds = $$(".spec[contenteditable]", body);
+  eds.forEach((el) => el.oninput = () => { cmpText = el.textContent; eds.forEach((x) => { if (x !== el) x.textContent = cmpText; }); });
+}
+
+// ---------- Deck ----------
+const deckOpts = { theme: LS.get("deckTheme", "paper"), overview: LS.get("deckOv", true), singles: LS.get("deckSingles", true) };
+let deckIdx = 0, deckN = 0;
+
+function deckSlides() {
+  const fams = cmpFams();
+  const txt = cmpTxt();
+  const date = new Date().toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
+  const info = (f) => {
+    const m = S.cmpW[f.key] ?? S.weight;
+    const pf = pickFace(f, m);
+    return { pf, label: faceLabel(pf) };
+  };
+  const fa = (pf) => `data-face="${pf.id}" data-vs="${esc(pf.vs || "")}"`;
+  const out = [];
+  out.push(`<section class="slide s-title"><div class="sl-in">
+    <div class="sl-k">Schriftvergleich</div>
+    <div class="grow"></div>
+    <h1>${fams.length} ${fams.length === 1 ? "Schrift" : "Schriften"} im Vergleich</h1>
+    <div class="names">${fams.map((f) => { const { pf } = info(f); return `<span ${fa(pf)}>${esc(f.name)}</span>`; }).join("")}</div>
+    <div class="grow"></div>
+    <div class="sl-foot"><span>Schriftkasten</span><span>${esc(date)}</span></div></div></section>`);
+  if (deckOpts.overview) {
+    const per = 6;
+    const pages = Math.ceil(fams.length / per);
+    for (let p = 0; p < pages; p++) {
+      const chunk = fams.slice(p * per, p * per + per);
+      const c = Math.min(3, chunk.length), r = Math.ceil(chunk.length / c);
+      const sz = (txt.length > 60 ? 3 : txt.length > 30 ? 3.6 : 4.4) * (r === 1 ? 1.35 : 1);
+      out.push(`<section class="slide s-ov"><div class="sl-in">
+        <div class="sl-k">Übersicht${pages > 1 ? ` ${p + 1} / ${pages}` : ""}</div>
+        <div class="ov-grid" style="--c:${c};--r:${r}">${chunk.map((f) => { const { pf, label } = info(f); return `<div class="ov-tile"><div class="ov-cap"><b>${esc(f.name)}</b><span>${esc(label)}</span></div><div class="ov-s" ${fa(pf)} style="font-size:${sz}cqw">${esc(txt)}</div></div>`; }).join("")}</div></div></section>`);
+    }
+  }
+  if (deckOpts.singles) {
+    fams.forEach((f, i) => {
+      const { pf, label } = info(f);
+      const n = f.name.length;
+      const ns = n > 22 ? 5.2 : n > 15 ? 6.8 : n > 10 ? 8.2 : 9.6;
+      const c = CATS[catOf(f)];
+      out.push(`<section class="slide s-one"><div class="sl-in">
+        <div class="one-top"><span>${String(i + 1).padStart(2, "0")} / ${String(fams.length).padStart(2, "0")}</span><span>${[label, c, `${f.nStyles} ${f.nStyles === 1 ? "Schnitt" : "Schnitte"}`].filter(Boolean).map(esc).join(" · ")}</span></div>
+        <div class="one-name" ${fa(pf)} style="font-size:${ns}cqw">${esc(f.name)}</div>
+        <div class="one-line" ${fa(pf)}>${esc(txt)}</div>
+        <div class="one-bot"><div class="one-p" ${fa(pf)}>${esc(PARA.p)}</div><div class="one-abc" ${fa(pf)}>ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>abcdefghijklmnopqrstuvwxyz<br>ÄÖÜ äöü ß &amp; 0123456789 € ?!</div></div></div></section>`);
+    });
+  }
+  return out;
+}
+
+function renderDeck() {
+  const d = $("#deck");
+  d.dataset.t = deckOpts.theme;
+  const slides = deckSlides();
+  deckN = slides.length;
+  deckIdx = Math.max(0, Math.min(deckIdx, deckN - 1));
+  d.innerHTML = `<div class="deck-bar">
+      <button class="btn" id="dkPrev" title="Zurück (←)">‹</button><span class="cnt" id="dkCnt"></span><button class="btn" id="dkNext" title="Weiter (→)">›</button>
+      <div class="seg" id="dkTheme"><button data-v="paper">Hell</button><button data-v="night">Dunkel</button></div>
+      <label><input type="checkbox" id="dkOv"${deckOpts.overview ? " checked" : ""}> Übersicht</label>
+      <label><input type="checkbox" id="dkOne"${deckOpts.singles ? " checked" : ""}> Einzelfolien</label>
+      <span class="hint">Schnitte und Text kommen aus dem Vergleich.</span>
+      <div class="spacer"></div>
+      <button class="btn primary" id="dkPrint" title="Öffnet den Druckdialog. Dort „Als PDF sichern“ wählen.">Als PDF sichern</button>
+      <button class="btn" id="dkClose">Schließen (Esc)</button></div>
+    <div class="deck-stage" id="dkStage">${slides.join("")}</div>`;
+  $$("[data-face]", d).forEach((el) => applyFace(el, el.dataset.face, el.dataset.vs));
+  $$("#dkTheme button", d).forEach((b) => { b.classList.toggle("on", b.dataset.v === deckOpts.theme); b.onclick = () => { deckOpts.theme = b.dataset.v; LS.set("deckTheme", deckOpts.theme); renderDeck(); }; });
+  const opt = (id, key, other) => $(id, d).onchange = (e) => {
+    deckOpts[key] = e.target.checked;
+    if (!deckOpts.overview && !deckOpts.singles) deckOpts[other] = true;
+    LS.set("deckOv", deckOpts.overview); LS.set("deckSingles", deckOpts.singles);
+    renderDeck();
+  };
+  opt("#dkOv", "overview", "singles");
+  opt("#dkOne", "singles", "overview");
+  $("#dkPrev").onclick = () => deckGo(-1);
+  $("#dkNext").onclick = () => deckGo(1);
+  $("#dkPrint").onclick = () => window.print();
+  $("#dkClose").onclick = closeDeck;
+  $("#dkStage").onclick = (e) => { if (e.target.closest(".slide")) deckGo(e.clientX > innerWidth / 2 ? 1 : -1); };
+  deckShow();
+}
+function deckShow() {
+  $$("#dkStage .slide").forEach((s, i) => s.classList.toggle("cur", i === deckIdx));
+  $("#dkCnt").textContent = `${deckIdx + 1} / ${deckN}`;
+  $("#dkPrev").disabled = deckIdx === 0;
+  $("#dkNext").disabled = deckIdx === deckN - 1;
+}
+function deckGo(d) { deckIdx = Math.max(0, Math.min(deckN - 1, deckIdx + d)); deckShow(); }
+function openDeck() { deckIdx = 0; renderDeck(); $("#deck").classList.add("on"); document.body.classList.add("deck-open"); }
+function closeDeck() { $("#deck").classList.remove("on"); document.body.classList.remove("deck-open"); }
+const deckOn = () => $("#deck").classList.contains("on");
+
+function closeCompare() { closeDeck(); cmpText = null; $("#compare").classList.remove("on"); }
 
 // ---------- Detailansicht ----------
 function openDrawer(key) {
@@ -889,6 +1072,11 @@ function renderSources() {
 // ---------- Tastatur ----------
 document.addEventListener("keydown", (e) => {
   const typing = e.target.closest("input, textarea, select, [contenteditable]");
+  if (deckOn() && !e.metaKey && !e.ctrlKey) {
+    if (e.key === "Escape") return closeDeck();
+    if (["ArrowRight", "PageDown", " "].includes(e.key) && !typing) { e.preventDefault(); return deckGo(1); }
+    if (["ArrowLeft", "PageUp"].includes(e.key) && !typing) { e.preventDefault(); return deckGo(-1); }
+  }
   if (e.key === "Escape") {
     if ($("#pop").classList.contains("on")) return $("#pop").classList.remove("on");
     if ($("#compare").classList.contains("on")) return closeCompare();

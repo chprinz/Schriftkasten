@@ -35,7 +35,7 @@ FONT_TYPES = {
     "ttc": "font/ttf", "otc": "font/otf", "dfont": "application/octet-stream",
 }
 
-APP_VERSION = "1.4"
+APP_VERSION = "1.5"
 _lock = threading.Lock()
 _last_seen = [time.time()]
 IDLE_HOURS = float(os.environ.get("SK_IDLE_HOURS", "8"))
