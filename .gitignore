@@ -8,3 +8,5 @@ data/userdata.bak.json
 config.json
 .DS_Store
 dist/
+__pycache__/
+*.pyc

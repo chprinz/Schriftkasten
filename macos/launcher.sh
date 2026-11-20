@@ -10,7 +10,15 @@ URL="http://127.0.0.1:$PORT/"
 mkdir -p "$SUP"
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.pyenv/shims:/usr/bin:/bin:/usr/sbin:/sbin"
 
-note() { /usr/bin/osascript -e "display notification \"$1\" with title \"Schriftkasten\"" >/dev/null 2>&1; }
+# Mitteilung mit App-Symbol, nach 6 Sekunden wieder weg. Fällt auf osascript zurück.
+note() {
+  local helper; helper="$(cd "$(dirname "$0")/.." && pwd)/Helpers/Notify.app"
+  if [ -d "$helper" ]; then
+    /usr/bin/open -n -g "$helper" --args "$1" 6 >/dev/null 2>&1
+  else
+    /usr/bin/osascript -e "display notification \"$1\" with title \"Schriftkasten\"" >/dev/null 2>&1
+  fi
+}
 fail() {
   /usr/bin/osascript -e "display dialog \"$1\" with title \"Schriftkasten\" buttons {\"Protokoll zeigen\", \"OK\"} default button \"OK\" with icon caution" \
     -e 'if button returned of result is "Protokoll zeigen" then do shell script "open -a Console " & quoted form of "'"$LOG"'"' >/dev/null 2>&1
