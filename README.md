@@ -49,13 +49,20 @@ Beliebig viele Familien markieren und als Zeilen, Kacheln oder Titel mit Absatz 
 
 ## Installieren
 
+Du brauchst einen Mac mit macOS 11 oder neuer und Python 3.8 oder neuer. Die App sucht Python selbst, in dieser Reihenfolge: Homebrew, `/usr/local`, pyenv, zuletzt das Python der Xcode-Kommandozeilentools. Fehlt es, hilft einer dieser Wege:
+
+```
+brew install python
+```
+
+oder `xcode-select --install` für die Kommandozeilentools von Apple. Beim ersten Start braucht die App außerdem einmal Internet, um `fonttools`, `brotli` und für die Übergabe an Font Book `pyobjc` in eine eigene Umgebung zu laden. Dein übriges Python bleibt unberührt.
+
 1. Unter [Releases](../../releases/latest) die ZIP-Datei laden und entpacken.
 2. `Schriftkasten.app` in den Ordner `Programme` (oder `~/Applications`) ziehen.
 3. Beim ersten Öffnen blockt macOS die App, weil sie nicht notarisiert ist. In den Systemeinstellungen unter Datenschutz & Sicherheit auf „Trotzdem öffnen“ klicken.
+4. Der erste Start dauert etwa eine Minute, weil die Python-Umgebung eingerichtet wird. Danach öffnet sich die Oberfläche im Browser. Beenden kannst du links unten mit „Beenden“.
 
-Beim ersten Start richtet die App eine eigene Python-Umgebung ein. Das dauert etwa eine Minute. Dafür muss `python3` installiert sein, zum Beispiel über Homebrew (`brew install python`). Danach öffnet sich die Oberfläche im Browser. Beenden kannst du links unten mit „Beenden“.
-
-Aus dem Quellcode: `./macos/build_app.sh` baut die App nach `dist/`.
+Aus dem Quellcode: `./macos/build_app.sh` baut die App nach `dist/`. Dafür braucht es die Kommandozeilentools (für `swiftc`, das die Mitteilungen baut).
 
 ## Datenschutz
 
