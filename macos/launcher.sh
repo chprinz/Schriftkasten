@@ -39,34 +39,42 @@ if running; then
   fi
 fi
 
-# Python-Umgebung einmalig einrichten
-VENV="$SUP/venv"
-if [ ! -x "$VENV/bin/python" ] || ! "$VENV/bin/python" -c "import fontTools, brotli" 2>/dev/null; then
-  PY=""
-  for c in /opt/homebrew/bin/python3 /usr/local/bin/python3 "$HOME/.pyenv/shims/python3" /usr/bin/python3; do
-    if [ -x "$c" ] && "$c" -c "import venv, sys; assert sys.version_info >= (3, 8)" 2>/dev/null; then PY="$c"; break; fi
-  done
-  [ -z "$PY" ] && fail "Kein Python 3 gefunden. Bitte Python über Homebrew installieren (brew install python) und erneut starten."
-  note "Einmalige Einrichtung, dauert etwa eine Minute …"
-  {
-    echo "== Einrichtung $(date) mit $PY"
-    rm -rf "$VENV"
-    "$PY" -m venv "$VENV" && "$VENV/bin/pip" install -q --upgrade pip && "$VENV/bin/pip" install -q fonttools brotli
-  } >> "$LOG" 2>&1 || fail "Die Einrichtung ist fehlgeschlagen. Details stehen im Protokoll."
-fi
+# Eingebautes Python, falls die App damit gebaut wurde. Sonst eigene Umgebung einrichten.
+BUNDLED="$APP_RES/../python/bin/python3"
+export PYTHONDONTWRITEBYTECODE=1
+if [ -x "$BUNDLED" ]; then
+  PYBIN="$BUNDLED"
+else
+  PYBIN="$SUP/venv/bin/python"
+  VENV="$SUP/venv"
+  if [ ! -x "$VENV/bin/python" ] || ! "$VENV/bin/python" -c "import fontTools, brotli" 2>/dev/null; then
+    PY=""
+    for c in /opt/homebrew/bin/python3 /usr/local/bin/python3 "$HOME/.pyenv/shims/python3" /usr/bin/python3; do
+      if [ -x "$c" ] && "$c" -c "import venv, sys; assert sys.version_info >= (3, 8)" 2>/dev/null; then PY="$c"; break; fi
+    done
+    [ -z "$PY" ] && fail "Kein Python 3 gefunden. Bitte Python über Homebrew installieren (brew install python) und erneut starten."
+    note "Einmalige Einrichtung, dauert etwa eine Minute …"
+    {
+      echo "== Einrichtung $(date) mit $PY"
+      rm -rf "$VENV"
+      "$PY" -m venv "$VENV" && "$VENV/bin/pip" install -q --upgrade pip && "$VENV/bin/pip" install -q fonttools brotli
+    } >> "$LOG" 2>&1 || fail "Die Einrichtung ist fehlgeschlagen. Details stehen im Protokoll."
+  fi
 
-# Für die Übergabe an die Schriftsammlung (Font Book). Fehlt es, läuft der Rest trotzdem.
-if ! "$VENV/bin/python" -c "import AppKit" 2>/dev/null; then
-  note "Richte Übergabe an die Schriftsammlung ein …"
-  echo "== PyObjC $(date)" >> "$LOG"
-  "$VENV/bin/pip" install -q pyobjc-framework-Cocoa >> "$LOG" 2>&1 || true
+  # Für die Übergabe an die Schriftsammlung (Font Book). Fehlt es, läuft der Rest trotzdem.
+  if ! "$VENV/bin/python" -c "import AppKit" 2>/dev/null; then
+    note "Richte Übergabe an die Schriftsammlung ein …"
+    echo "== PyObjC $(date)" >> "$LOG"
+    "$VENV/bin/pip" install -q pyobjc-framework-Cocoa >> "$LOG" 2>&1 || true
+  fi
+
 fi
 
 note "Lese Schriften ein …"
 export SK_DATA="$SUP"
 cd "$APP_RES" || fail "App-Dateien nicht gefunden."
 echo "== Start $(date)" >> "$LOG"
-nohup "$VENV/bin/python" serve.py --scan --no-browser --port "$PORT" >> "$LOG" 2>&1 &
+nohup "$PYBIN" serve.py --scan --no-browser --port "$PORT" >> "$LOG" 2>&1 &
 
 for i in $(seq 1 120); do
   if running; then open "$URL"; exit 0; fi
